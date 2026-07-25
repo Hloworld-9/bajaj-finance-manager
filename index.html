@@ -118,9 +118,30 @@
             .print-header-visible { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid black; padding-bottom: 10px; }
         }
         .print-header-visible { display: none; }
+
+        /* 📄 HOME PDF STATEMENT MODAL */
+        #homeStatementModal { display: none; position: fixed; z-index: 10004; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .statement-modal-box { background: white; width: 95%; max-width: 700px; height: 85vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .statement-header { padding: 15px 20px; border-bottom: 2px solid #222; text-align: center; position: relative; background: #fafafa; }
+        .statement-body { padding: 0; overflow-y: auto; flex: 1; background: white; }
+        .statement-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .statement-table th, .statement-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .statement-table th { background-color: #f2f2f7; font-weight: 700; color: #333; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .statement-table tbody tr:hover { background-color: #f9f9f9; }
+        .close-statement-btn { position: absolute; right: 15px; top: 15px; background: #ffebee; color: var(--ios-red); border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .st-actions { display: flex; gap: 6px; }
+
+        @media print {
+            .hide-print { display: none !important; }
+            body.printing-modal #mainApp, body.printing-modal .navbar, body.printing-modal .bottom-nav { display: none !important; }
+            body.printing-modal #homeStatementModal { position: static; display: block !important; background: white; z-index: 99999; }
+            body.printing-modal .statement-modal-box { width: 100%; height: auto; box-shadow: none; border: none; border-radius: 0; }
+            body.printing-modal .statement-table th { position: static; box-shadow: none; }
+        }
     </style>
 </head>
-<body><!-- 🌟 NEW: Edit Transaction Sub-Modal -->
+<body>
+    <!-- 🌟 NEW: Edit Transaction Sub-Modal -->
     <div id="editTransactionModal" class="sub-modal">
         <div class="sub-modal-box">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px;">
@@ -150,6 +171,39 @@
                 <div class="input-row" style="padding:8px 0;"><label style="width:70px;">Remarks</label><div class="input-wrapper"><input type="text" id="eRemarks"></div></div>
             </div>
             <button class="btn-primary" onclick="saveEditedTransaction()" style="margin-top:20px;">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- 📄 NEW: Home PDF Statement Modal -->
+    <div id="homeStatementModal">
+        <div class="statement-modal-box">
+            <div class="statement-header">
+                <button class="close-statement-btn hide-print" onclick="closeHomeStatement()">✖ Close</button>
+                <h2 style="margin: 0; font-size: 20px; color: var(--ios-text-main);">Savitri Electronics</h2>
+                <p style="margin: 2px 0; font-size: 13px; color: gray;">Khata / Ledger Statement</p>
+                <h3 id="hsDealerName" style="margin: 8px 0 0 0; font-size: 17px; color: var(--ios-blue);"></h3>
+            </div>
+            <div style="display:flex; justify-content: space-between; align-items:center; padding: 12px 20px; background: #e8f5e9; border-bottom: 1px solid #ccc; font-size: 14px;">
+                <div>Net Balance: <strong id="hsNetBal" style="font-size: 16px;">₹0</strong></div>
+                <button class="btn-report-action btn-pdf hide-print" style="padding: 8px 15px; width: auto;" onclick="printHomeStatement()">🖨️ Print PDF</button>
+            </div>
+            <div class="statement-body">
+                <table class="statement-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Date</th>
+                            <th style="width: 30%;">Particulars</th>
+                            <th style="width: 15%;">Maal (₹)</th>
+                            <th style="width: 15%;">Jama (₹)</th>
+                            <th style="width: 15%;">Balance</th>
+                            <th class="hide-print" style="width: 10%;">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hsTableBody">
+                        <!-- Dynamic Data Goes Here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -225,7 +279,8 @@
                         <div style="display:flex; justify-content:space-between; font-size:15px; margin-top:8px; padding-top:8px; border-top:1px dashed #ccc;">
                             <span id="hBalanceTitle">Balance:</span> <strong id="hBalance" style="color:var(--ios-red);">₹0</strong>
                         </div>
-                        <button onclick="switchTab('tab-accounts', 'Dealer Khata'); document.getElementById('ledgerDealerSelect').value = document.getElementById('homeDealerSelect').value; loadDealerPassbook();" class="btn-primary" style="margin-top:15px; padding:10px; font-size:14px; background-color:var(--ios-purple);">📖 Go to Full Ledger Statement</button>
+                        
+                        <button onclick="openHomeStatementModal()" class="btn-primary" style="margin-top:15px; padding:10px; font-size:14px; background-color:var(--ios-purple);">📄 View Statement (PDF View)</button>
                     </div>
                 </div>
 
@@ -235,7 +290,6 @@
                     <div class="loading-text" style="padding:15px; font-size:12px;">No deliveries scheduled for today.</div>
                 </div>
             </div>
-
             <!-- 2. PURCHASE TAB (Maal Inward) -->
             <div id="tab-purchase" class="tab-content">
                 <div class="section-title">Maal Inward (Purchase Bill)</div>
@@ -280,15 +334,19 @@
                     <div class="section-title">Recent Inward Bills</div>
                 </div>
                 
-                <div class="search-container">
-                    <span>🔍 </span>
-                    <input type="text" id="pSearch" placeholder="Search by Dealer, Bill No or Date..." onkeyup="searchPurchase()">
+                <!-- 🆕 UPDATED: Search Input ki jagah ab Dealer Select Dropdown hai -->
+                <div class="card" style="margin-top: 8px; padding: 12px; background: white;">
+                    <select id="purchaseFilterSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="filterPurchaseByDealer()">
+                        <option value="" selected>Show All Dealers...</option>
+                    </select>
                 </div>
                 
                 <div class="card" id="purchaseList">
                     <div class="loading-text">Loading bills...</div>
                 </div>
-            </div><!-- 3. ACCOUNTS TAB (Dealer Khata - Bank Passbook Style) -->
+            </div>
+
+            <!-- 3. ACCOUNTS TAB (Dealer Khata - Bank Passbook Style) -->
             <div id="tab-accounts" class="tab-content">
                 
                 <!-- 🖨️ For Print & PDF Only -->
@@ -356,7 +414,7 @@
 
                 <br><br>
 
-                <!-- 🌟 NEW: Unified Bank-Passbook Style Statement (No Popup) -->
+                <!-- Unified Bank-Passbook Style Statement (No Popup) -->
                 <div class="section-header">
                     <div class="section-title" id="passbookTitle">Ledger Statement</div>
                 </div>
@@ -525,7 +583,8 @@
             <div class="nav-item" onclick="switchTab('tab-realstock', 'Real Stock')"><span class="nav-icon">📦</span><span>Stock</span></div>
             <div class="nav-item" onclick="switchTab('tab-sales', 'Bookings')"><span class="nav-icon">📝</span><span>Sales</span></div>
         </div>
-    </div><!-- MAIN APP JAVASCRIPT & FIREBASE -->
+    </div>
+    <!-- MAIN APP JAVASCRIPT & FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, setDoc, getDoc, where, orderBy } 
@@ -543,7 +602,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ================= 🔍 RESTORED: UNIVERSAL IN-APP PHOTO ZOOM =================
+        // ================= 🔍 UNIVERSAL IN-APP PHOTO ZOOM =================
         window.viewImage = function(base64Str) {
             document.getElementById('fullSizeImage').src = base64Str;
             document.getElementById('imageViewerModal').style.display = 'flex';
@@ -601,13 +660,21 @@
         onSnapshot(dealerRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().list) dealersList = docSnap.data().list; else setDoc(dealerRef, { list: dealersList }); updateDealerSelects();
         });
+        
+        // 🆕 UPDATED: Added purchaseFilterSelect to the auto-update list
         function updateDealerSelects() {
-            const selects = ['dealerSelect', 'ledgerDealerSelect', 'homeDealerSelect'];
+            const selects = ['dealerSelect', 'ledgerDealerSelect', 'homeDealerSelect', 'purchaseFilterSelect'];
             selects.forEach(id => {
                 const sel = document.getElementById(id);
                 if(sel) {
-                    const currentVal = sel.value; let defaultText = id === 'dealerSelect' ? 'Select Dealer...' : 'Select Dealer to view Khata...';
-                    sel.innerHTML = `<option value="" disabled selected>${defaultText}</option>`;
+                    const currentVal = sel.value; 
+                    if(id === 'purchaseFilterSelect') {
+                        sel.innerHTML = `<option value="">Show All Dealers...</option>`;
+                    } else {
+                        let defaultText = id === 'dealerSelect' ? 'Select Dealer...' : 'Select Dealer to view Khata...';
+                        sel.innerHTML = `<option value="" disabled selected>${defaultText}</option>`;
+                    }
+                    
                     dealersList.sort().forEach(d => { sel.innerHTML += `<option value="${d}">${d}</option>`; });
                     if(currentVal && dealersList.includes(currentVal)) sel.value = currentVal;
                 }
@@ -615,7 +682,7 @@
         }
         window.addNewDealer = async function() { const newDealer = prompt("Naye Dealer ka naam:"); if (newDealer && newDealer.trim() !== "") { const cleanDealer = newDealer.trim().toUpperCase(); if(!dealersList.includes(cleanDealer)) { dealersList.push(cleanDealer); await setDoc(dealerRef, { list: dealersList }); document.getElementById("dealerSelect").value = cleanDealer; } } };
 
-        // ================= 🚚 RESTORED: PURCHASE BILLS =================
+        // ================= 🚚 PURCHASE BILLS (UPDATED WITH DROPDOWN FILTER) =================
         if(document.getElementById('billDate')) document.getElementById('billDate').valueAsDate = new Date();
         let globalTotalPurchases = 0; let globalTotalPayments = 0;
 
@@ -632,13 +699,11 @@
             btn.innerText = "Save Bill Details";
         });
 
-        // HATA DIYA GAYA ORDERBY: Taaki purana data wapas aa jaye! JavaScript khud sort karega.
         onSnapshot(query(collection(db, "purchase_bills")), (snap) => {
             const list = document.getElementById('purchaseList'); globalTotalPurchases = 0;
             let tempArray = [];
             snap.forEach((docSnap) => { let data = docSnap.data(); data.id = docSnap.id; tempArray.push(data); });
             
-            // JavaScript Sorting (Newest First)
             tempArray.sort((a,b) => {
                 let dA = new Date(a.date).getTime(); let dB = new Date(b.date).getTime();
                 if(dA === dB) return (b.timestamp||0) - (a.timestamp||0);
@@ -651,7 +716,8 @@
                 if(list) {
                     let dStr = new Date(data.date).toLocaleDateString('en-IN');
                     let pBtn = data.photo ? `<button onclick="viewImage('${data.photo}')" class="btn-edit" style="width:auto; padding:6px 12px;">📸 View Bill</button>` : '';
-                    list.innerHTML += `<div class="record-item p-item" data-search="${data.dealer.toLowerCase()} ${data.billNo.toLowerCase()} ${dStr}">
+                    // Added data-dealer for precise filtering
+                    list.innerHTML += `<div class="record-item p-item" data-dealer="${data.dealer}">
                             <div style="display:flex; justify-content:space-between;"><div class="product-title">${data.dealer}</div><div style="font-weight:700; color:var(--ios-green);">₹${data.amount.toLocaleString('en-IN')}</div></div>
                             <div class="data-row"><span>Bill: <strong>${data.billNo}</strong></span><span>📅 ${dStr}</span></div>
                             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">${pBtn}<button onclick="deleteBill('${data.id}')" class="btn-destructive" style="width:auto; padding:6px 12px;">🗑️ Delete</button></div>
@@ -660,30 +726,38 @@
             });
             if(document.getElementById('dashPurchase')) document.getElementById('dashPurchase').innerText = "₹" + globalTotalPurchases.toLocaleString('en-IN');
             updateMarketDue();
+            if (window.filterPurchaseByDealer) window.filterPurchaseByDealer(); // Re-apply filter if active
         });
         
-        window.searchPurchase = function() { let val = document.getElementById('pSearch').value.toLowerCase(); document.querySelectorAll('.p-item').forEach(el => { el.style.display = el.dataset.search.includes(val) ? '' : 'none'; }); };
+        // 🆕 UPDATED: Filter by Dropdown instead of Text Search
+        window.filterPurchaseByDealer = function() { 
+            let selectedDealer = document.getElementById('purchaseFilterSelect').value; 
+            document.querySelectorAll('.p-item').forEach(el => { 
+                if(selectedDealer === "" || el.dataset.dealer === selectedDealer) {
+                    el.style.display = ''; 
+                } else {
+                    el.style.display = 'none';
+                }
+            }); 
+        };
+        
         window.deleteBill = function(id) { if(confirm("⚠️ Delete this bill?")) deleteDoc(doc(db, "purchase_bills", id)); };
 
 
-        // ================= 🏦 NEW: CLEAN BANK-PASSBOOK LEDGER (NO POPUP) =================
+        // ================= 🏦 CLEAN BANK-PASSBOOK LEDGER =================
         if(document.getElementById('payDate')) document.getElementById('payDate').valueAsDate = new Date();
         let pbUnsubBills = null; let pbUnsubPays = null;
         let pbDealer = "";
-        let globalPassbookData = []; // Store sorted data globally for Excel Export
+        let globalPassbookData = [];
 
         window.loadDealerPassbook = function() {
             const dealer = document.getElementById('ledgerDealerSelect').value; if(!dealer) return;
             pbDealer = dealer;
             
-            // Set Print Headers
             document.getElementById('printDealerName').innerText = dealer;
             document.getElementById('printDateString').innerText = "Generated on: " + new Date().toLocaleString('en-IN');
-            
             document.getElementById('ledgerDashboard').style.display = 'block';
             document.getElementById('passbookTitle').innerText = dealer + " - Statement";
-            
-            // Show action buttons
             document.getElementById('reportActionBar').style.display = 'flex';
             
             if(pbUnsubBills) pbUnsubBills(); if(pbUnsubPays) pbUnsubPays();
@@ -693,14 +767,13 @@
             function renderPassbook() {
                 let combined = [...bData, ...pData];
                 
-                // Sort chronologically (Oldest First) to calculate accurate Running Balance
                 combined.sort((a,b) => {
                     let dA = new Date(a.date).getTime(); let dB = new Date(b.date).getTime();
                     if(dA === dB) return (a.timestamp||0) - (b.timestamp||0);
                     return dA - dB;
                 });
                 
-                globalPassbookData = combined; // Save for Excel
+                globalPassbookData = combined;
 
                 let tB = 0, tP = 0, rBal = 0; let html = '';
                 combined.forEach(item => {
@@ -726,10 +799,9 @@
                             </div>
                         </div>
                     </div>`;
-                    html = block + html; // Reverse so newest shows at top
+                    html = block + html; 
                 });
 
-                // Update Top Dashboard
                 document.getElementById('ledgerTotalBill').innerText = "₹" + tB.toLocaleString('en-IN'); document.getElementById('ledgerTotalPaid').innerText = "₹" + tP.toLocaleString('en-IN');
                 let bal = tB - tP; let bb = document.getElementById('ledgerBalanceBox'); let bt = document.getElementById('ledgerBalanceTitle'); let bv = document.getElementById('ledgerBalanceValue');
                 if(bal > 0) { bb.style.background = "#ffebee"; bt.innerText = "Due Balance"; bv.style.color = "var(--ios-red)"; bv.innerText = "₹" + bal.toLocaleString('en-IN'); } 
@@ -756,7 +828,7 @@
             document.getElementById('payAmount').value = ''; document.getElementById('payRemarks').value = ''; alert("✅ Payment Updated!");
         });
 
-        // ✏️ EDIT & 🗑️ DELETE (Connected to Inline Passbook)
+        // ✏️ EDIT & 🗑️ DELETE (Connected to Inline Passbook & PDF Modal)
         window.deleteUnifiedTxn = async function(id, type) {
             if(!confirm("⚠️ Entry permanently delete ho jayegi. Are you sure?")) return;
             let colName = type === 'bill' ? 'purchase_bills' : 'dealer_payments';
@@ -823,8 +895,10 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         };
 
-        // Home Khata View
+        // ================= 📄 HOME TAB PDF STATEMENT LOGIC =================
         let hUnsubBills = null; let hUnsubPays = null;
+        let hsUnsubBills = null; let hsUnsubPays = null;
+        
         window.loadHomeDealerLedger = function() {
             const dealer = document.getElementById('homeDealerSelect').value; if(!dealer) return;
             document.getElementById('homeLedgerResult').style.display = 'block';
@@ -840,6 +914,74 @@
             }
         };
 
+        window.openHomeStatementModal = function() {
+            const dealer = document.getElementById('homeDealerSelect').value;
+            if(!dealer) { alert("Please select a dealer first."); return; }
+            
+            document.getElementById('hsDealerName').innerText = dealer;
+            document.getElementById('homeStatementModal').style.display = 'flex';
+            
+            if(hsUnsubBills) hsUnsubBills(); 
+            if(hsUnsubPays) hsUnsubPays();
+            
+            let bData = []; let pData = [];
+
+            function renderHS() {
+                let combined = [...bData, ...pData];
+                
+                combined.sort((a,b) => {
+                    let dA = new Date(a.date).getTime(); let dB = new Date(b.date).getTime();
+                    if(dA === dB) return (a.timestamp||0) - (b.timestamp||0);
+                    return dA - dB;
+                });
+
+                let rBal = 0; let html = '';
+                combined.forEach(item => {
+                    let inA = item.type === 'bill' ? item.amount : 0; 
+                    let outA = item.type === 'pay' ? item.amount : 0;
+                    rBal += (inA - outA); 
+
+                    let dS = new Date(item.date).toLocaleDateString('en-IN');
+                    let title = item.type === 'bill' ? `Bill No: ${item.billNo}` : `Payment: ${item.mode} <span style="color:gray;font-size:11px;">${item.remarks?'('+item.remarks+')':''}</span>`;
+                    let bBadge = rBal > 0 ? `₹${Math.abs(rBal).toLocaleString()} Dr` : (rBal < 0 ? `₹${Math.abs(rBal).toLocaleString()} Cr` : `Nil`);
+
+                    html += `<tr>
+                        <td style="font-weight:500;">${dS}</td>
+                        <td>${title}</td>
+                        <td style="color:var(--ios-green); font-weight:600;">${inA ? inA.toLocaleString() : '-'}</td>
+                        <td style="color:var(--ios-blue); font-weight:600;">${outA ? outA.toLocaleString() : '-'}</td>
+                        <td style="font-weight:bold; color:${rBal>0?'var(--ios-red)':'var(--ios-green)'}">${bBadge}</td>
+                        <td class="hide-print st-actions">
+                            <button class="stmt-btn stmt-btn-edit" onclick="openEditUnified('${item.id}', '${item.type}')">✏️</button>
+                            <button class="stmt-btn stmt-btn-del" onclick="deleteUnifiedTxn('${item.id}', '${item.type}')">🗑️</button>
+                        </td>
+                    </tr>`;
+                });
+
+                document.getElementById('hsTableBody').innerHTML = html || '<tr><td colspan="6" style="text-align:center; padding: 20px; color: gray;">No transactions found for this dealer.</td></tr>';
+                
+                let nb = document.getElementById('hsNetBal');
+                if(rBal > 0) { nb.innerText = `₹${rBal.toLocaleString('en-IN')} (Due)`; nb.style.color = "var(--ios-red)"; }
+                else if(rBal < 0) { nb.innerText = `₹${Math.abs(rBal).toLocaleString('en-IN')} (Advance)`; nb.style.color = "var(--ios-green)"; }
+                else { nb.innerText = "Account Settled"; nb.style.color = "var(--ios-text-main)"; }
+            }
+
+            hsUnsubBills = onSnapshot(query(collection(db, "purchase_bills"), where("dealer", "==", dealer)), (snap) => {
+                bData = []; snap.forEach(doc => { let d=doc.data(); bData.push({id:doc.id, type:'bill', date:d.date, amount:Number(d.amount), billNo:d.billNo, timestamp:d.timestamp}); }); renderHS();
+            });
+            hsUnsubPays = onSnapshot(query(collection(db, "dealer_payments"), where("dealer", "==", dealer)), (snap) => {
+                pData = []; snap.forEach(doc => { let d=doc.data(); pData.push({id:doc.id, type:'pay', date:d.date, amount:Number(d.amount), mode:d.mode, remarks:d.remarks, timestamp:d.timestamp}); }); renderHS();
+            });
+        };
+
+        window.closeHomeStatement = function() { document.getElementById('homeStatementModal').style.display = 'none'; };
+        window.printHomeStatement = function() {
+            document.body.classList.add('printing-modal'); 
+            window.print();
+            setTimeout(() => document.body.classList.remove('printing-modal'), 500);
+        };
+
+        // Market Due global update
         onSnapshot(query(collection(db, "dealer_payments")), (snap) => { globalTotalPayments = 0; snap.forEach(doc => globalTotalPayments += (doc.data().amount || 0)); updateMarketDue(); });
         function updateMarketDue() {
             let marketDue = globalTotalPurchases - globalTotalPayments; let dueEl = document.getElementById('dashMarketDue'); if(!dueEl) return;
@@ -847,7 +989,7 @@
             else { dueEl.innerText = "₹0 (Clear)"; dueEl.style.color = "#2e7d32"; }
         }
 
-        // ================= FINANCE S/N (Locked Module - Sorted via JS for old data) =================
+        // ================= FINANCE S/N =================
         let globalRecords = []; let brandCategories = ["LG", "WHIRLPOOL", "VOLTAS", "SAMSUNG", "SONY", "HAVELLS"];
         const catRef = doc(db, "app_settings", "brands");
         onSnapshot(catRef, (snap) => { if (snap.exists() && snap.data().list) brandCategories = snap.data().list; else setDoc(catRef, { list: brandCategories }); renderCategories(); });
@@ -878,7 +1020,7 @@
             const list = document.getElementById('recordsList'); if(document.getElementById('totalCount')) document.getElementById('totalCount').innerText = snap.size;
             if(!list) return; list.innerHTML = ''; globalRecords = [];
             let tempA = []; snap.forEach((docSnap) => { let d = docSnap.data(); d.id = docSnap.id; tempA.push(d); globalRecords.push(d); });
-            tempA.sort((a,b) => (b.timestamp||0) - (a.timestamp||0)); // JS Sort
+            tempA.sort((a,b) => (b.timestamp||0) - (a.timestamp||0)); 
             tempA.forEach((data) => {
                 let pBtn = data.photo ? `<button onclick="viewImage('${data.photo}')" class="btn-edit" style="background:#e8f5e9; color:var(--ios-green); margin-right:5px;">📸</button>` : '';
                 list.innerHTML += `<div class="record-item record-card" data-search="${data.category} ${data.model} ${data.serial}">
@@ -890,7 +1032,6 @@
         });
         window.filterRecords = function() { let val = document.getElementById('searchInput').value.toUpperCase(); document.querySelectorAll('.record-card').forEach(el => { el.style.display = el.dataset.search.toUpperCase().includes(val) ? '' : 'none'; }); };
         
-        // Stock Excel Export
         window.exportStockExcel = function() {
             if(globalRecords.length === 0) return;
             let csvContent = "data:text/csv;charset=utf-8,Date,Brand,Model Name,Star Rating,Serial Number\n"; 
@@ -946,7 +1087,7 @@
         window.adjustQty = async function(id, currentQty, change) { let newQty = currentQty + change; if(newQty < 0) newQty = 0; await updateDoc(doc(db, "real_inventory", id), { qty: newQty, updatedAt: Date.now() }); };
         window.filterRealStock = function() { let val = document.getElementById('rsSearchInput').value.toLowerCase(); document.querySelectorAll('.rs-card').forEach(el => { el.style.display = el.dataset.search.includes(val) ? '' : 'none'; }); };
 
-        // ================= SALES / BOOKING (DYNAMIC - Restored Sorting) =================
+        // ================= SALES / BOOKING =================
         if(document.getElementById('custDeliveryDate')) document.getElementById('custDeliveryDate').valueAsDate = new Date();
         window.addSalesItemRow = function() { const wrapper = document.getElementById('itemsWrapper'); const row = document.createElement('div'); row.className = 'sales-item-row'; row.innerHTML = `<input type="text" class="sales-item-name req-item-name" placeholder="Item Name"><input type="number" class="sales-item-qty req-item-qty" placeholder="Qty" value="1" oninput="calculateCustBalance()"><input type="number" class="sales-item-price req-item-price" placeholder="Price (₹)" oninput="calculateCustBalance()"><button class="btn-remove-item" onclick="removeSalesItemRow(this)" title="Remove Item">✖</button>`; wrapper.appendChild(row); };
         window.removeSalesItemRow = function(btn) { btn.parentElement.remove(); calculateCustBalance(); };
@@ -966,7 +1107,7 @@
             if(list) list.innerHTML = ''; if(todayList) todayList.innerHTML = '';
             let tAdv = 0; let todayCount = 0; let todayStr = new Date().toISOString().split('T')[0];
             let tempA = []; snap.forEach(doc => { let d = doc.data(); d.id = doc.id; tempA.push(d); });
-            tempA.sort((a,b) => (b.timestamp||0) - (a.timestamp||0)); // JS Sort to prevent missing data
+            tempA.sort((a,b) => (b.timestamp||0) - (a.timestamp||0)); 
 
             tempA.forEach((d) => {
                 tAdv += (d.advanceAmount || 0); let bal = (d.totalBill||0) - (d.advanceAmount||0);
@@ -981,4 +1122,4 @@
 
     </script>
 </body>
-</html>
+</html> 
