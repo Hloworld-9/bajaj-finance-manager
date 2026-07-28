@@ -89,7 +89,7 @@
         .filler-row td { border-bottom: none !important; border-top: none !important; }
         .text-center { text-align: center; } .text-right { text-align: right; } .bold { font-weight: bold; }
 
-        /* ================= 10. NEW: MODAL & PDF STATEMENT STYLES ================= */
+        /* ================= 10. MODAL & PDF STATEMENT STYLES ================= */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99999; overflow-y: auto; padding: 20px 0; backdrop-filter: blur(5px); }
         .ledger-a4 { width: 794px; background: white; margin: 0 auto; padding: 30px; box-sizing: border-box; font-family: Arial, sans-serif; font-size: 12px; color: black; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .ledger-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -103,19 +103,27 @@
         .nav-item.active { color: var(--ios-blue); }
         .nav-icon { font-size: 22px; margin-bottom: 4px; }
 
-        /* ================= 12. PRINT STYLES ================= */
+        /* ================= 12. PRINT STYLES (100% FIXED ISOLATION) ================= */
+        @page { size: A4 portrait; margin: 10mm; }
         @media print {
+            body { background: white; }
             body * { visibility: hidden; }
-            #invoiceArea, #invoiceArea * { visibility: visible; }
-            #printableLedgerArea, #printableLedgerArea * { visibility: visible; }
             
-            #invoiceArea { position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
-            #printableLedgerArea { position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
+            /* Hide both by default during print */
+            #invoiceArea, #printableLedgerArea { display: none !important; }
             
-            .preview-wrapper, .modal-overlay { background: transparent; padding: 0; overflow: visible; }
-            .a4-container, .ledger-a4 { height: auto; box-shadow: none; }
-            .border-box { height: auto; min-height: 1050px; }
-            .hide-print, .btn-close-modal, .hide-in-pdf-print { display: none !important; }
+            /* Command: print-gst ONLY shows the GST Bill */
+            body.print-gst #invoiceArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
+            body.print-gst #invoiceArea *, body.print-gst #invoiceArea { visibility: visible; }
+            
+            /* Command: print-ledger ONLY shows the Khata Ledger */
+            body.print-ledger #printableLedgerArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
+            body.print-ledger #printableLedgerArea *, body.print-ledger #printableLedgerArea { visibility: visible; }
+            
+            .preview-wrapper, .modal-overlay { background: transparent; padding: 0; overflow: visible; display: block !important; position: static; }
+            .a4-container, .ledger-a4 { width: 100% !important; height: auto !important; max-width: 100%; box-shadow: none; margin: 0; padding: 0; }
+            .border-box { height: auto; min-height: unset; border: 1px solid #000; }
+            .hide-print, .btn-close-modal, .hide-in-pdf-print, .bottom-nav, .top-header { display: none !important; }
         }
     </style>
 </head>
@@ -168,7 +176,7 @@
                     </div>
                 </div>
             </div>
-
+            <!-- 2. GST BILL TAB (Creation & View Module) -->
             <div id="tab-gst" class="tab-content">
                 <div id="gstFormSection">
                     <div class="gst-grid hide-print">
@@ -208,7 +216,7 @@
                     <h3 style="margin-top:0; color:var(--ios-blue);">Viewing Past Invoice</h3>
                     <div style="display:flex; gap:10px;">
                         <button class="btn-primary" onclick="exitPastBillView()" style="flex:1; background:#8e8e93; margin-top:0;">⬅ Back</button>
-                        <button class="btn-primary" onclick="window.print()" style="flex:1; background:var(--ios-blue); margin-top:0;">🖨️ Print PDF</button>
+                        <button class="btn-primary" onclick="printDirectPdf(window.currentViewingBillId)" style="flex:1; background:var(--ios-blue); margin-top:0;">🖨️ Print PDF</button>
                     </div>
                 </div>
 
@@ -297,6 +305,7 @@
                 </div>
             </div>
 
+            <!-- 3. INVOICE MEMO TAB -->
             <div id="tab-memo" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px; margin-bottom: 10px;">GST Invoice Memos</div>
                 <div class="dash-grid">
@@ -309,6 +318,7 @@
                 <div class="card" id="memoList"><div class="loading-text" style="padding:15px; color:gray;">Loading Invoices...</div></div>
             </div>
 
+            <!-- 4. PURCHASE TAB (Maal Inward) -->
             <div id="tab-purchase" class="tab-content hide-print">
                 <div class="section-title">Maal Inward (Purchase Bill)</div>
                 <div class="card" style="margin-top: 8px;">
@@ -328,7 +338,7 @@
                 <div class="card" style="margin-top: 8px; padding: 12px; background: white;"><select id="purchaseFilterSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="filterPurchaseByDealer()"><option value="" selected>Show All Dealers...</option></select></div>
                 <div class="card" id="purchaseList"><div class="loading-text">Loading bills...</div></div>
             </div>
-            
+            <!-- 5. ACCOUNTS TAB (Dealer Khata) -->
             <div id="tab-accounts" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px;">Dealer Ledger (Khata)</div>
                 <div class="card" style="margin-top: 8px; padding: 12px; background: white;"><select id="ledgerDealerSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="loadDealerPassbook()"><option value="" disabled selected>Select Dealer to view Khata...</option></select></div>
@@ -350,6 +360,7 @@
                 <div class="card" id="passbookCardParent"><div id="passbookList"><div class="record-item" style="color:gray; padding:15px;">Select dealer...</div></div></div>
             </div>
 
+            <!-- 6. REAL STOCK TAB -->
             <div id="tab-realstock" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px;">Real Inventory Entry</div>
                 <div class="card" style="margin-top: 8px;">
@@ -366,6 +377,7 @@
                 <div class="card" id="realStockList"><div class="loading-text">Loading Inventory...</div></div>
             </div>
 
+            <!-- 7. SALES & BOOKING TAB -->
             <div id="tab-sales" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px;">Customer Booking</div>
                 <div class="card" style="margin-top: 8px;">
@@ -387,10 +399,15 @@
                 <div class="card" id="bookingList"></div>
             </div>
 
-        </div> <div id="pdfLedgerModal" class="modal-overlay">
+        </div> <!-- END OF TABS CONTAINER -->
+
+        <!-- ================= GLOBAL MODALS ================= -->
+        
+        <!-- PDF LEDGER MODAL -->
+        <div id="pdfLedgerModal" class="modal-overlay">
             <div style="text-align:center; margin-bottom: 15px;" class="hide-print">
                 <button class="btn-primary" onclick="closeHomeStatementModal()" style="width: auto; background: #8e8e93; padding: 10px 20px; margin:0 5px;">⬅ Close</button>
-                <button class="btn-primary" onclick="window.print()" style="width: auto; background: var(--ios-green); padding: 10px 20px; margin:0 5px;">🖨️ Download PDF</button>
+                <button class="btn-primary" onclick="printLedgerPdf()" style="width: auto; background: var(--ios-green); padding: 10px 20px; margin:0 5px;">🖨️ Download PDF</button>
             </div>
             <div class="ledger-scale-wrapper">
                 <div class="ledger-a4" id="printableLedgerArea">
@@ -421,6 +438,7 @@
             </div>
         </div>
 
+        <!-- TRANSACTION EDIT MODAL -->
         <div id="editTxnModal" class="modal-overlay" style="z-index: 3000; padding-top:50px;">
             <div class="card hide-print" style="width: 90%; max-width: 400px; margin: 0 auto; padding: 20px;">
                 <h3 style="margin-top:0; color:var(--ios-blue);">Edit Transaction</h3>
@@ -446,6 +464,7 @@
             </div>
         </div>
 
+        <!-- 🖼️ IMAGE VIEWER MODAL -->
         <div id="imageModal" class="modal-overlay" style="z-index: 4000; align-items:center; justify-content:center; flex-direction:column;">
             <div style="width: 90%; max-width: 500px; text-align:right; margin-bottom:10px; margin-top: 50px;">
                 <button class="btn-destructive" onclick="closeImageModal()" style="background:white; color:var(--ios-red); padding:8px 15px; font-size:16px; font-weight:bold; border-radius:8px;">✖ Close</button>
@@ -453,6 +472,7 @@
             <img id="modalImageSrc" style="max-width: 95%; max-height: 75vh; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); object-fit: contain;">
         </div>
 
+        <!-- Bottom Navigation Bar -->
         <div class="bottom-nav hide-print">
             <div class="nav-item active" onclick="switchTab('tab-home', 'Shop Dashboard')"><span class="nav-icon">🏠</span><span>Home</span></div>
             <div class="nav-item" onclick="switchTab('tab-gst', 'Create GST Bill')"><span class="nav-icon">🧾</span><span>GST</span></div>
@@ -463,7 +483,7 @@
             <div class="nav-item" onclick="switchTab('tab-sales', 'Bookings')"><span class="nav-icon">📝</span><span>Sales</span></div>
         </div>
     </div>
-
+    <!-- MAIN APP JAVASCRIPT & FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, setDoc, getDoc, where, orderBy } 
@@ -522,7 +542,7 @@
             } else alert("❌ Wrong PIN."); 
         };
 
-        // ================= 🖼️ IMAGE VIEWER LOGIC (Fixed & Fast) =================
+        // ================= 🖼️ IMAGE VIEWER LOGIC =================
         window.closeImageModal = function() { 
             document.getElementById('imageModal').style.display = 'none'; 
             document.getElementById('modalImageSrc').src = ''; 
@@ -567,6 +587,7 @@
 
         // ================= GST BILL FORM LOGIC =================
         window.gstItems = [];
+        window.currentViewingBillId = ""; // To track the currently viewed past invoice
         
         window.scaleInvoice = function() {
             const wrapper = document.getElementById('gst_previewWrapper'); 
@@ -736,7 +757,21 @@
             if(list) {
                 list.innerHTML = '';
                 tempA.forEach(d => {
-                    list.innerHTML += `<div class="record-item m-item" data-search="${d.cName.toLowerCase()} ${d.billNo.toLowerCase()}"><div style="display:flex; justify-content:space-between;"><div class="product-title">${d.cName}</div><div style="font-weight:700; color:var(--ios-green);">₹${(d.grandTotal||0).toLocaleString('en-IN')}</div></div><div class="data-row"><span>Bill: <strong>${d.billNo}</strong></span><span>📅 ${new Date(d.date).toLocaleDateString('en-IN')}</span></div><div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;"><button onclick="viewPastBill('${d.id}')" class="btn-edit" style="width:auto; padding:6px 15px; background:var(--ios-blue); color:white;">👁️ View Bill</button><button onclick="deleteGstBill('${d.id}')" class="btn-destructive" style="width:auto; padding:6px 12px;">🗑️ Delete</button></div></div>`;
+                    list.innerHTML += `<div class="record-item m-item" data-search="${d.cName.toLowerCase()} ${d.billNo.toLowerCase()}">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div class="product-title">${d.cName}</div>
+                            <div style="font-weight:700; color:var(--ios-green);">₹${(d.grandTotal||0).toLocaleString('en-IN')}</div>
+                        </div>
+                        <div class="data-row">
+                            <span>Bill: <strong>${d.billNo}</strong></span>
+                            <span>📅 ${new Date(d.date).toLocaleDateString('en-IN')}</span>
+                        </div>
+                        <div style="margin-top:10px; display:flex; gap:8px; justify-content:space-between; align-items:center;">
+                            <button onclick="viewPastBill('${d.id}')" class="btn-edit" style="flex:1; padding:6px; background:var(--ios-blue); color:white;">👁️ View</button>
+                            <button onclick="printDirectPdf('${d.id}')" class="btn-edit" style="flex:1; padding:6px; background:var(--ios-green); color:white;">🖨️ PDF</button>
+                            <button onclick="deleteGstBill('${d.id}')" class="btn-destructive" style="padding:6px 12px;">🗑️ Delete</button>
+                        </div>
+                    </div>`;
                 });
                 if(snap.empty) list.innerHTML = '<div class="loading-text" style="padding:15px; color:gray;">No saved invoices found.</div>';
             }
@@ -790,15 +825,83 @@
             }
         };
 
+        // ====== ISOLATED PRINT COMMANDS ======
+        
         window.saveAndPrintGST = function() {
             if(window.gstItems.length === 0) { alert("⚠️ Bill is empty!"); return; }
             if(!document.getElementById('gst_cName').value.trim()) { alert("⚠️ Customer Name is required!"); return; }
+            
+            // Set Body Class for GST Only Print
+            document.body.className = 'print-gst';
+            document.getElementById('invoiceArea').style.transform = 'scale(1)'; 
             window.print(); 
+            
             setTimeout(async () => { 
                 let success = await saveGSTBillToDB(); 
                 if(success) console.log("✅ Bill Auto-Saved!"); 
             }, 100);
         };
+
+        window.printDirectPdf = function(id) {
+            let b = globalGstInvoices.find(x => x.id === id); 
+            if(!b) return;
+            
+            // Populate background printable area
+            document.getElementById('gst_outName').innerText = b.cName;
+            document.getElementById('gst_outMobile').innerText = b.cMobile || ''; 
+            document.getElementById('gst_boxMobile').style.display = b.cMobile ? 'block' : 'none';
+            document.getElementById('gst_outAddress').innerText = b.cAddress || ''; 
+            document.getElementById('gst_boxAddress').style.display = b.cAddress ? 'block' : 'none';
+            document.getElementById('gst_outGST').innerText = b.cGST || ''; 
+            document.getElementById('gst_boxGST').style.display = b.cGST ? 'block' : 'none';
+            document.getElementById('gst_invNo').innerText = b.billNo; 
+            document.getElementById('gst_outDate').innerText = new Date(b.date).toLocaleDateString('en-IN');
+            
+            let html = ''; let hsnGroups = {};
+            b.items.forEach((item, index) => {
+                html += `<tr><td class="text-center">${index + 1}</td><td class="bold">${item.name}</td><td class="text-center">${item.hsn}</td><td class="text-center">${item.qty}</td><td class="text-right">${item.incRate.toFixed(2)}</td><td class="text-right">${item.baseRate.toFixed(2)}</td><td class="text-right">${item.baseAmount.toFixed(2)}</td></tr>`;
+                let key = item.hsn || '-'; 
+                if(!hsnGroups[key]) hsnGroups[key] = 0; 
+                hsnGroups[key] += item.baseAmount;
+            });
+            html += `<tr class="filler-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+            document.getElementById('gst_outItemsList').innerHTML = html;
+
+            document.getElementById('gst_outCGST').innerText = b.cgst.toFixed(2); 
+            document.getElementById('gst_outSGST').innerText = b.sgst.toFixed(2);
+            let roundText = b.roundOff.toFixed(2); 
+            if(b.roundOff > 0) roundText = "(+)" + roundText; 
+            else if(b.roundOff < 0) roundText = "(-)" + Math.abs(b.roundOff).toFixed(2);
+            
+            document.getElementById('gst_outRound').innerText = roundText; 
+            document.getElementById('gst_outTotal').innerText = '₹ ' + b.grandTotal.toLocaleString('en-IN') + '.00';
+            document.getElementById('gst_outWords').innerText = 'Indian Rupees ' + window.numToWords(b.grandTotal) + ' Only';
+
+            let taxHtml = ''; 
+            for(let hsn in hsnGroups) { 
+                let val = hsnGroups[hsn]; let c = val * 0.09; let s = val * 0.09; let tot = c + s; 
+                taxHtml += `<tr><td class="text-center" style="border-left:none; padding:4px;">${hsn}</td><td class="text-right" style="padding:4px;">${val.toFixed(2)}</td><td class="text-center" style="padding:4px;">9%</td><td class="text-right" style="padding:4px;">${c.toFixed(2)}</td><td class="text-center" style="padding:4px;">9%</td><td class="text-right" style="padding:4px;">${s.toFixed(2)}</td><td class="text-right" style="border-right:none; padding:4px;">${tot.toFixed(2)}</td></tr>`; 
+            }
+            document.getElementById('gst_taxSummaryList').innerHTML = taxHtml;
+            document.getElementById('gst_tsTotalTaxable').innerText = b.totalBase.toFixed(2); 
+            document.getElementById('gst_tsTotalCGST').innerText = b.cgst.toFixed(2); 
+            document.getElementById('gst_tsTotalSGST').innerText = b.sgst.toFixed(2); 
+            document.getElementById('gst_tsTotalTax').innerText = (b.cgst + b.sgst).toFixed(2);
+            document.getElementById('gst_outTaxWords').innerText = 'Indian Rupees ' + window.numToWords(Math.round(b.cgst + b.sgst)) + ' Only';
+
+            // Set Body Class for GST Only Print
+            document.body.className = 'print-gst';
+            document.getElementById('invoiceArea').style.transform = 'scale(1)';
+            setTimeout(() => { window.print(); }, 100);
+        };
+
+        window.printLedgerPdf = function() {
+            // Set Body Class for Ledger Only Print
+            document.body.className = 'print-ledger';
+            setTimeout(() => { window.print(); }, 100);
+        };
+
+        // ===================================================
 
         window.saveAndWhatsAppGST = async function() {
             if(window.gstItems.length === 0) { alert("⚠️ Bill is empty!"); return; }
@@ -818,6 +921,8 @@
         window.viewPastBill = function(id) {
             let b = globalGstInvoices.find(x => x.id === id); 
             if(!b) return;
+            window.currentViewingBillId = id; // Store for View Tab Print button
+            
             switchTab('tab-gst', 'View Invoice');
             document.getElementById('gstFormSection').style.display = 'none'; 
             document.getElementById('gstViewActions').style.display = 'flex';
