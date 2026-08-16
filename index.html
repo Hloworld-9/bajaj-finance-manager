@@ -412,13 +412,13 @@
                 <div class="card" id="bookingList"></div>
             </div>
 
-            <!-- 8. CUSTOMER KHATA TAB -->
+            <!-- 8. CUSTOMER KHATA TAB (UPDATED WITH SEARCH BOX) -->
             <div id="tab-cust-khata" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px;">Customer Udhar Khata</div>
                 <div class="card" style="margin-top: 8px; padding: 12px; background: white;">
-                    <select id="khataCustomerSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="loadCustomerKhata()">
-                        <option value="" disabled selected>Select Customer to view Khata...</option>
-                    </select>
+                    <!-- Naya Searchable Input yahan add kiya hai -->
+                    <input type="text" id="khataCustomerSelect" list="khataCustomerDatalist" placeholder="🔍 Search Customer Name..." style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none; box-sizing:border-box;" onchange="loadCustomerKhata()">
+                    <datalist id="khataCustomerDatalist"></datalist>
                 </div>
                 
                 <div class="card" id="khataDashboard" style="display: none; padding: 15px;">
@@ -603,7 +603,7 @@
     <!-- MAIN APP JAVASCRIPT & FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, setDoc, getDoc, where, orderBy } 
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, setDoc, getDoc, where, orderBy, getDocs } 
         from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -705,7 +705,7 @@
         // ================= GST BILL FORM LOGIC =================
         window.gstItems = [];
         window.currentViewingBillId = ""; 
-        window.currentGrandTotal = 0; // Store for Jama/Baki calc
+        window.currentGrandTotal = 0; 
         
         window.scaleInvoice = function() {
             const wrapper = document.getElementById('gst_previewWrapper'); 
@@ -855,7 +855,7 @@
             return str.trim();
         };
 
-        // ================= GST MEMO (SAVE, VIEW & CUSTOMER KHATA AUTO-UPDATE) =================
+        // ================= GST MEMO & CUSTOMER KHATA AUTO-UPDATE =================
         let globalGstInvoices = []; 
         let currentBillNumber = "SE/26-27/001";
         
@@ -922,8 +922,32 @@
             }); 
         };
         
-        window.deleteGstBill = function(id) { 
-            if(confirm("⚠️ Permanently delete this GST Bill? (Note: It will NOT auto-delete from Customer Khata)")) deleteDoc(doc(db, "gst_invoices", id)); 
+        // NEW AUTO DELETE LOGIC
+        window.deleteGstBill = async function(id) { 
+            if(!confirm("⚠️ Kya aap sach mein is GST Bill ko delete karna chahte hain? \n\nIska Udhar aur Jama record bhi Khata se permanently delete ho jayega!")) return;
+            
+            let bill = globalGstInvoices.find(x => x.id === id);
+            if(bill) {
+                let bNo = bill.billNo;
+                
+                // 1. Delete main GST invoice
+                await deleteDoc(doc(db, "gst_invoices", id));
+                
+                // 2. Delete from Udhar (cust_khata_bills)
+                const qBills = query(collection(db, "cust_khata_bills"), where("billNo", "==", bNo));
+                const snapBills = await getDocs(qBills);
+                snapBills.forEach(async (d) => { await deleteDoc(doc(db, "cust_khata_bills", d.id)); });
+
+                // 3. Delete from Jama (cust_khata_payments)
+                const qPays = query(collection(db, "cust_khata_payments"), where("customer", "==", bill.cName));
+                const snapPays = await getDocs(qPays);
+                snapPays.forEach(async (d) => { 
+                    if(d.data().remarks && d.data().remarks.includes(bNo)) {
+                        await deleteDoc(doc(db, "cust_khata_payments", d.id)); 
+                    }
+                });
+                alert("✅ Bill aur uska Khata record successfully delete ho gaya.");
+            }
         };
 
         window.saveGSTBillToDB = async function() {
@@ -972,7 +996,7 @@
                     });
                 }
                 
-                // 4. Auto-add to Customer Khata Payments (Jama) if any payment made
+                // 4. Auto-add to Customer Khata Payments (Jama)
                 if(amtPaid > 0) {
                     await addDoc(collection(db, "cust_khata_payments"), {
                         customer: name, date: billDate, amount: amtPaid, mode: "Bill Jama", remarks: "For Bill: " + currentBillNumber, timestamp: ts + 1
@@ -995,7 +1019,6 @@
             }
         };
 
-        // ====== ISOLATED PRINT COMMANDS ======
         window.saveAndPrintGST = function() {
             if(window.gstItems.length === 0) { alert("⚠️ Bill is empty!"); return; }
             if(!document.getElementById('gst_cName').value.trim()) { alert("⚠️ Customer Name is required!"); return; }
@@ -1139,7 +1162,6 @@
 
         if(window.updateGstUI) window.updateGstUI();
         if(window.renderGstCalculations) window.renderGstCalculations();
-
         // ================= ERP LOGIC (REST TABS) =================
         let dealersList = ["SAMSUNG DISTRIBUTOR", "LG AGENCY"]; 
         const dealerRef = doc(db, "app_settings", "dealers");
@@ -1164,13 +1186,12 @@
             }); 
         }
 
+        // NEW: Update Customer Datalist for Search Box
         window.updateKhataSelects = function() {
-            const sel = document.getElementById('khataCustomerSelect');
-            if(sel && typeof customerList !== 'undefined') {
-                const currentVal = sel.value;
-                sel.innerHTML = `<option value="" disabled selected>Select Customer to view Khata...</option>`;
-                customerList.sort().forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-                if(currentVal && customerList.includes(currentVal)) sel.value = currentVal;
+            const dataList = document.getElementById('khataCustomerDatalist');
+            if(dataList && typeof customerList !== 'undefined') {
+                dataList.innerHTML = '';
+                customerList.sort().forEach(c => { dataList.innerHTML += `<option value="${c}">`; });
             }
         };
         
@@ -1323,7 +1344,7 @@
         let ckTotalDueAmount = 0;
         
         window.loadCustomerKhata = function() {
-            const customer = document.getElementById('khataCustomerSelect').value;
+            const customer = document.getElementById('khataCustomerSelect').value.trim();
             if(!customer) return;
             ckCustomer = customer;
             document.getElementById('khataDashboard').style.display = 'block';
@@ -1353,7 +1374,7 @@
                     let safeRemarks = (item.remarks || '').replace(/'/g, "\\'"); 
                     let safeBillNo = (item.billNo || '').replace(/'/g, "\\'");
                     
-                    // NEW EDIT, DELETE AND DETAILS BUTTONS
+                    // EDIT, DELETE AND DETAILS BUTTONS
                     let actionButtons = `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">`;
                     
                     if(item.type === 'bill') {
@@ -1394,7 +1415,7 @@
         };
         
         document.getElementById('saveKhataPaymentBtn')?.addEventListener('click', async () => {
-            const customer = document.getElementById('khataCustomerSelect').value;
+            const customer = document.getElementById('khataCustomerSelect').value.trim();
             const amount = document.getElementById('khataPayAmount').value;
             if(!customer || !amount) { alert("Customer aur Amount bharein!"); return; }
             
@@ -1405,7 +1426,7 @@
             alert("✅ Customer Jama Updated!");
         });
 
-        // --- NEW EDIT & DELETE FUNCTIONS FOR KHATA --- //
+        // EDIT & DELETE FUNCTIONS FOR KHATA
         window.deleteCustTxn = async function(id, type) {
             if(!confirm("⚠️ Kya aap sach mein is entry ko delete karna chahte hain?")) return;
             let colName = type === 'bill' ? 'cust_khata_bills' : 'cust_khata_payments';
@@ -1464,14 +1485,23 @@
             }
         };
 
+        // NEW WhatsApp Logic with Auto-fill Number
         window.sendCustomerReminder = function() {
             if(ckTotalDueAmount <= 0) {
                 alert("Iss customer ka koi Baki (Due) nahi hai.");
                 return;
             }
-            let mobile = prompt("Customer ka WhatsApp number enter karein (10 digits):");
+            
+            // Database se is customer ka number dhundhna
+            let custMobile = "";
+            let pastBill = globalGstInvoices.find(b => b.cName.toUpperCase() === ckCustomer.toUpperCase() && b.cMobile);
+            if(pastBill) {
+                custMobile = pastBill.cMobile;
+            }
+
+            let mobile = prompt("Customer ka WhatsApp number:", custMobile);
             if(mobile && mobile.length >= 10) {
-                let msg = `*SAVITRI ELECTRONICS AND FURNITURE*\n\nNamaskar ${ckCustomer},\nAapke khata mein *₹${ckTotalDueAmount}* baki (due) hai.\nKripya samay par jama karayein.\nDhanyawad!`;
+                let msg = `*SAVITRI ELECTRONICS AND FURNITURE*\n\nNamaskar ${ckCustomer},\nAapke khata mein *₹${ckTotalDueAmount.toLocaleString('en-IN')}* baki (due) hai.\nKripya samay par jama karayein.\nDhanyawad!`;
                 window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`, '_blank');
             }
         };
@@ -1812,7 +1842,7 @@
             if(confirm("✅ Is Customer ki Delivery/Payment complete ho gayi?")) deleteDoc(doc(db, "sales_bookings", id)); 
         };
 
-        // --- NEW: VIEW BILL DETAILS FROM KHATA --- //
+        // --- VIEW BILL DETAILS FROM KHATA --- //
         window.viewKhataBillDetails = function(billNo) {
             if(!billNo) return;
             
