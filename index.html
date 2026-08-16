@@ -109,14 +109,11 @@
             body { background: white; }
             body * { visibility: hidden; }
             
-            /* Hide both by default during print */
             #invoiceArea, #printableLedgerArea { display: none !important; }
             
-            /* Command: print-gst ONLY shows the GST Bill */
             body.print-gst #invoiceArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
             body.print-gst #invoiceArea *, body.print-gst #invoiceArea { visibility: visible; }
             
-            /* Command: print-ledger ONLY shows the Khata Ledger */
             body.print-ledger #printableLedgerArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
             body.print-ledger #printableLedgerArea *, body.print-ledger #printableLedgerArea { visibility: visible; }
             
@@ -144,6 +141,7 @@
 
         <div id="tabs-container">
 
+            <!-- 1. HOME TAB -->
             <div id="tab-home" class="tab-content active hide-print">
                 <div class="card" style="background: linear-gradient(135deg, var(--ios-blue), #5ac8fa); color: white; padding: 20px;">
                     <h2 style="margin: 0 0 5px 0; font-size: 24px;">Welcome Back!</h2>
@@ -176,6 +174,7 @@
                     </div>
                 </div>
             </div>
+
             <!-- 2. GST BILL TAB (Creation & View Module) -->
             <div id="tab-gst" class="tab-content">
                 <div id="gstFormSection">
@@ -204,6 +203,20 @@
                             <thead><tr><th>Item</th><th>Qty</th><th>Final Rate</th><th>Action</th></tr></thead>
                             <tbody id="gst_summaryBody"></tbody>
                         </table>
+                        
+                        <!-- NEW: Customer Khata Payment Inputs -->
+                        <div style="display:flex; gap:10px; margin-top:15px; background:#e8f5e9; padding:15px; border-radius:8px; border:1px solid var(--ios-green);">
+                            <div class="form-group" style="flex:1; margin-bottom:0;">
+                                <label style="color:var(--ios-green); font-size:13px; font-weight:bold;">Jama Kiya (₹)</label>
+                                <input type="number" id="gst_amtPaid" placeholder="0" oninput="calculateGstDue()" style="width:100%; padding:8px; border:1px solid var(--ios-green); border-radius:6px; margin-top:5px; outline:none; font-size:16px;">
+                            </div>
+                            <div class="form-group" style="flex:1; margin-bottom:0; text-align:right;">
+                                <label style="color:var(--ios-red); font-size:13px; font-weight:bold;">Baki Due (₹)</label>
+                                <input type="text" id="gst_amtDue" readonly value="0" style="width:100%; padding:8px; text-align:right; font-weight:bold; color:var(--ios-red); background:transparent; border:none; font-size:18px; margin-top:5px;">
+                            </div>
+                        </div>
+                        <!-- END NEW -->
+
                         <div style="display:flex; gap:10px; margin-top:15px;">
                             <button class="btn-primary" onclick="saveAndPrintGST()" style="flex:1; margin-top:0; background:var(--ios-blue);">💾 Save & Print</button>
                             <button class="btn-primary" onclick="saveAndWhatsAppGST()" style="flex:1; margin-top:0; background:#25D366;">🟢 Save & WhatsApp</button>
@@ -304,7 +317,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- 3. INVOICE MEMO TAB -->
             <div id="tab-memo" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px; margin-bottom: 10px;">GST Invoice Memos</div>
@@ -338,6 +350,7 @@
                 <div class="card" style="margin-top: 8px; padding: 12px; background: white;"><select id="purchaseFilterSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="filterPurchaseByDealer()"><option value="" selected>Show All Dealers...</option></select></div>
                 <div class="card" id="purchaseList"><div class="loading-text">Loading bills...</div></div>
             </div>
+
             <!-- 5. ACCOUNTS TAB (Dealer Khata) -->
             <div id="tab-accounts" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px;">Dealer Ledger (Khata)</div>
@@ -399,6 +412,49 @@
                 <div class="card" id="bookingList"></div>
             </div>
 
+            <!-- 8. CUSTOMER KHATA TAB -->
+            <div id="tab-cust-khata" class="tab-content hide-print">
+                <div class="section-title" style="margin-left: 12px;">Customer Udhar Khata</div>
+                <div class="card" style="margin-top: 8px; padding: 12px; background: white;">
+                    <select id="khataCustomerSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="loadCustomerKhata()">
+                        <option value="" disabled selected>Select Customer to view Khata...</option>
+                    </select>
+                </div>
+                
+                <div class="card" id="khataDashboard" style="display: none; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="dash-card" style="background: #fff3e0; flex:1; padding:10px; margin-right:10px;">
+                            <div class="dash-title">Total Bill</div>
+                            <div class="dash-value" style="color: var(--ios-orange);" id="khataTotalBill">₹0</div>
+                        </div>
+                        <div class="dash-card" style="background: #e8f5e9; flex:1; padding:10px;">
+                            <div class="dash-title">Total Jama</div>
+                            <div class="dash-value" style="color: var(--ios-green);" id="khataTotalJama">₹0</div>
+                        </div>
+                    </div>
+                    <div class="dash-card" id="khataBalanceBox" style="background: #ffebee; padding:15px; text-align:center;">
+                        <div class="dash-title" id="khataBalanceTitle" style="font-size: 14px;">Baki (Due)</div>
+                        <div class="dash-value" id="khataBalanceValue" style="font-size: 26px; color: var(--ios-red);">₹0</div>
+                        <button class="btn-primary" onclick="sendCustomerReminder()" style="background:#25D366; padding:8px; font-size:14px; margin-top:10px; width:100%;">🟢 WhatsApp Reminder</button>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 20px; margin-left: 12px;">Naya Jama (Add Payment)</div>
+                <div class="card" style="margin-top: 8px;">
+                    <div class="input-row"><label>Date</label><div class="input-wrapper"><input type="date" id="khataPayDate"></div></div>
+                    <div class="input-row"><label>Amount</label><div class="input-wrapper"><input type="number" id="khataPayAmount" placeholder="₹ Amount"></div></div>
+                    <div class="input-row"><label>Mode</label><div class="input-wrapper"><select id="khataPayMode" style="width:100%; font-size: 15px; background: transparent; border:none; outline:none;"><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Bank">Bank</option></select></div></div>
+                    <div class="input-row"><label>Remarks</label><div class="input-wrapper"><input type="text" id="khataPayRemarks" placeholder="Details..."></div></div>
+                </div>
+                <button class="btn-primary" id="saveKhataPaymentBtn" style="background-color: var(--ios-purple);">Save Jama Record</button>
+                
+                <br><br>
+                <div class="section-header"><div class="section-title" id="khataPassbookTitle">Customer Statement</div></div>
+                <div class="card" id="khataPassbookCardParent">
+                    <div id="khataPassbookList"><div class="record-item" style="color:gray; padding:15px;">Select customer...</div></div>
+                </div>
+            </div>
+
         </div> <!-- END OF TABS CONTAINER -->
 
         <!-- ================= GLOBAL MODALS ================= -->
@@ -438,7 +494,7 @@
             </div>
         </div>
 
-        <!-- TRANSACTION EDIT MODAL -->
+        <!-- DEALER TRANSACTION EDIT MODAL -->
         <div id="editTxnModal" class="modal-overlay" style="z-index: 3000; padding-top:50px;">
             <div class="card hide-print" style="width: 90%; max-width: 400px; margin: 0 auto; padding: 20px;">
                 <h3 style="margin-top:0; color:var(--ios-blue);">Edit Transaction</h3>
@@ -472,17 +528,78 @@
             <img id="modalImageSrc" style="max-width: 95%; max-height: 75vh; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); object-fit: contain;">
         </div>
 
+        <!-- CUSTOMER KHATA EDIT MODAL -->
+        <div id="editCustTxnModal" class="modal-overlay" style="z-index: 3000; padding-top:50px;">
+            <div class="card hide-print" style="width: 90%; max-width: 400px; margin: 0 auto; padding: 20px;">
+                <h3 style="margin-top:0; color:var(--ios-blue);">Edit Khata Entry</h3>
+                <input type="hidden" id="editCustTxnId">
+                <input type="hidden" id="editCustTxnType">
+                
+                <div class="input-row"><label>Date</label><div class="input-wrapper"><input type="date" id="editCustTxnDate"></div></div>
+                <div class="input-row"><label>Amount</label><div class="input-wrapper"><input type="number" id="editCustTxnAmount"></div></div>
+                
+                <div id="editCustBillFields" style="display:none;">
+                    <div class="input-row" style="border-bottom:none;"><label>Bill No.</label><div class="input-wrapper"><input type="text" id="editCustTxnBillNo"></div></div>
+                </div>
+                
+                <div id="editCustPayFields" style="display:none;">
+                    <div class="input-row"><label>Mode</label><div class="input-wrapper"><select id="editCustTxnMode"><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Bank">Bank</option><option value="Bill Jama">Bill Jama</option></select></div></div>
+                    <div class="input-row" style="border-bottom:none;"><label>Remarks</label><div class="input-wrapper"><input type="text" id="editCustTxnRemarks"></div></div>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-primary" onclick="saveCustTxnEdit()" style="flex:1; background:var(--ios-green); margin-top:0;">💾 Update</button>
+                    <button class="btn-primary" onclick="closeCustEditTxnModal()" style="flex:1; background:var(--ios-red); margin-top:0;">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KHATA BILL DETAILS MODAL -->
+        <div id="viewKhataBillModal" class="modal-overlay" style="z-index: 4000; padding-top:50px;">
+            <div class="card hide-print" style="width: 90%; max-width: 400px; margin: 0 auto; padding: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0; color:var(--ios-blue);">🧾 Bill Details</h3>
+                    <button onclick="closeKhataBillModal()" style="background:none; border:none; font-size:18px; color:var(--ios-red); cursor:pointer;">✖</button>
+                </div>
+                
+                <div style="background:#f9f9fc; padding:10px; border-radius:8px; border:1px solid var(--ios-border); margin-bottom:15px; font-size:14px;">
+                    <div style="margin-bottom:5px;"><strong>Name:</strong> <span id="vk_name"></span></div>
+                    <div style="margin-bottom:5px;"><strong>Mobile:</strong> <span id="vk_mobile"></span></div>
+                    <div style="margin-bottom:5px;"><strong>Address:</strong> <span id="vk_address"></span></div>
+                    <div style="margin-bottom:5px;"><strong>Bill No:</strong> <span id="vk_billNo"></span></div>
+                    <div><strong>Date:</strong> <span id="vk_date"></span></div>
+                </div>
+
+                <h4 style="margin:0 0 10px 0; font-size:14px; color:#444;">Items Purchased:</h4>
+                <div id="vk_itemsList" style="max-height: 150px; overflow-y: auto; margin-bottom:15px; font-size:13px; border-bottom:1px solid #ddd; padding-bottom:10px;">
+                    <!-- Items list will appear here -->
+                </div>
+
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px; font-size:14px;">
+                    <span>Total Bill:</span><span id="vk_total" style="color:var(--ios-blue);">₹0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px; font-size:14px;">
+                    <span>Paid (Jama):</span><span id="vk_paid" style="color:var(--ios-green);">₹0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:16px; margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
+                    <span>Baki (Due):</span><span id="vk_due" style="color:var(--ios-red);">₹0</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Bottom Navigation Bar -->
-        <div class="bottom-nav hide-print">
-            <div class="nav-item active" onclick="switchTab('tab-home', 'Shop Dashboard')"><span class="nav-icon">🏠</span><span>Home</span></div>
-            <div class="nav-item" onclick="switchTab('tab-gst', 'Create GST Bill')"><span class="nav-icon">🧾</span><span>GST</span></div>
-            <div class="nav-item" onclick="switchTab('tab-memo', 'Invoice Memos')"><span class="nav-icon">📁</span><span>Memo</span></div>
-            <div class="nav-item" onclick="switchTab('tab-purchase', 'Maal Inward')"><span class="nav-icon">🚛</span><span>Buy</span></div>
-            <div class="nav-item" onclick="switchTab('tab-accounts', 'Dealer Khata')"><span class="nav-icon">📒</span><span>Khata</span></div>
-            <div class="nav-item" onclick="switchTab('tab-realstock', 'Real Stock')"><span class="nav-icon">📦</span><span>Stock</span></div>
-            <div class="nav-item" onclick="switchTab('tab-sales', 'Bookings')"><span class="nav-icon">📝</span><span>Sales</span></div>
+        <div class="bottom-nav hide-print" style="overflow-x: auto; justify-content: flex-start; gap: 8px; padding: 10px 10px 25px 10px;">
+            <div class="nav-item active" style="min-width: 60px;" onclick="switchTab('tab-home', 'Shop Dashboard')"><span class="nav-icon">🏠</span><span>Home</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-gst', 'Create GST Bill')"><span class="nav-icon">🧾</span><span>GST</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-memo', 'Invoice Memos')"><span class="nav-icon">📁</span><span>Memo</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-purchase', 'Maal Inward')"><span class="nav-icon">🚛</span><span>Buy</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-accounts', 'Dealer Khata')"><span class="nav-icon">📒</span><span>Khata</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-realstock', 'Real Stock')"><span class="nav-icon">📦</span><span>Stock</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-sales', 'Bookings')"><span class="nav-icon">📝</span><span>Sales</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-cust-khata', 'Customer Khata')"><span class="nav-icon">🧑‍🤝‍🧑</span><span>Udhar</span></div>
         </div>
     </div>
+    
     <!-- MAIN APP JAVASCRIPT & FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -587,7 +704,8 @@
 
         // ================= GST BILL FORM LOGIC =================
         window.gstItems = [];
-        window.currentViewingBillId = ""; // To track the currently viewed past invoice
+        window.currentViewingBillId = ""; 
+        window.currentGrandTotal = 0; // Store for Jama/Baki calc
         
         window.scaleInvoice = function() {
             const wrapper = document.getElementById('gst_previewWrapper'); 
@@ -649,6 +767,13 @@
             window.renderGstCalculations(); 
         };
 
+        // Calculate Baki (Due) when Jama amount is entered
+        window.calculateGstDue = function() {
+            let jama = Number(document.getElementById('gst_amtPaid').value) || 0;
+            let baki = window.currentGrandTotal - jama;
+            document.getElementById('gst_amtDue').value = baki;
+        };
+
         window.renderGstCalculations = function() {
             const sumTable = document.getElementById('gst_summaryTable'); 
             const sumBody = document.getElementById('gst_summaryBody'); 
@@ -682,6 +807,9 @@
             const grandTotalExact = totalBaseAmount + cgst + sgst; 
             const grandTotalRounded = Math.round(grandTotalExact); 
             const roundOff = grandTotalRounded - grandTotalExact;
+            
+            window.currentGrandTotal = grandTotalRounded; 
+            window.calculateGstDue(); 
             
             document.getElementById('gst_outCGST').innerText = cgst.toFixed(2); 
             document.getElementById('gst_outSGST').innerText = sgst.toFixed(2);
@@ -727,9 +855,18 @@
             return str.trim();
         };
 
-        // ================= GST MEMO (SAVE & VIEW LOGIC) =================
+        // ================= GST MEMO (SAVE, VIEW & CUSTOMER KHATA AUTO-UPDATE) =================
         let globalGstInvoices = []; 
         let currentBillNumber = "SE/26-27/001";
+        
+        // Setup Customer List reference
+        let customerList = []; 
+        const custRef = doc(db, "app_settings", "customers");
+        onSnapshot(custRef, (docSnap) => { 
+            if (docSnap.exists() && docSnap.data().list) customerList = docSnap.data().list; 
+            else setDoc(custRef, { list: customerList }); 
+            if(window.updateKhataSelects) window.updateKhataSelects();
+        });
 
         onSnapshot(query(collection(db, "gst_invoices")), (snap) => {
             const list = document.getElementById('memoList'); 
@@ -757,10 +894,11 @@
             if(list) {
                 list.innerHTML = '';
                 tempA.forEach(d => {
+                    let dueBadge = d.due > 0 ? `<span style="color:var(--ios-red); font-size:12px; margin-left:10px;">Due: ₹${d.due}</span>` : `<span style="color:var(--ios-green); font-size:12px; margin-left:10px;">Paid</span>`;
                     list.innerHTML += `<div class="record-item m-item" data-search="${d.cName.toLowerCase()} ${d.billNo.toLowerCase()}">
-                        <div style="display:flex; justify-content:space-between;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
                             <div class="product-title">${d.cName}</div>
-                            <div style="font-weight:700; color:var(--ios-green);">₹${(d.grandTotal||0).toLocaleString('en-IN')}</div>
+                            <div style="font-weight:700; color:var(--ios-green);">₹${(d.grandTotal||0).toLocaleString('en-IN')}<br>${dueBadge}</div>
                         </div>
                         <div class="data-row">
                             <span>Bill: <strong>${d.billNo}</strong></span>
@@ -785,13 +923,14 @@
         };
         
         window.deleteGstBill = function(id) { 
-            if(confirm("⚠️ Permanently delete this GST Bill?")) deleteDoc(doc(db, "gst_invoices", id)); 
+            if(confirm("⚠️ Permanently delete this GST Bill? (Note: It will NOT auto-delete from Customer Khata)")) deleteDoc(doc(db, "gst_invoices", id)); 
         };
 
         window.saveGSTBillToDB = async function() {
             if(window.gstItems.length === 0) return false;
-            const name = document.getElementById('gst_cName').value.trim(); 
-            if(!name) return false;
+            const rawName = document.getElementById('gst_cName').value.trim(); 
+            if(!rawName) return false;
+            const name = rawName.toUpperCase(); // Standardize name
             
             let totalBase = 0; 
             window.gstItems.forEach(i => totalBase += i.baseAmount);
@@ -801,22 +940,53 @@
             const grandTotal = Math.round(totalBase + cgst + sgst); 
             const roundOff = grandTotal - (totalBase + cgst + sgst);
             
+            const amtPaid = Number(document.getElementById('gst_amtPaid').value) || 0;
+            const amtDue = grandTotal - amtPaid;
+            const billDate = document.getElementById('gst_cDate').value;
+            const mobileNo = document.getElementById('gst_cMobile').value.trim();
+            const ts = Date.now();
+            
             const billData = { 
-                billNo: currentBillNumber, cName: name, 
-                cMobile: document.getElementById('gst_cMobile').value.trim(), 
+                billNo: currentBillNumber, cName: name, cMobile: mobileNo, 
                 cAddress: document.getElementById('gst_cAddress').value.trim(), 
                 cGST: document.getElementById('gst_cGST').value.trim().toUpperCase(), 
-                date: document.getElementById('gst_cDate').value, items: window.gstItems, 
-                totalBase, cgst, sgst, roundOff, grandTotal, timestamp: Date.now() 
+                date: billDate, items: window.gstItems, 
+                totalBase, cgst, sgst, roundOff, grandTotal, 
+                paid: amtPaid, due: amtDue, timestamp: ts 
             };
             
             try { 
+                // 1. Save GST Bill
                 await addDoc(collection(db, "gst_invoices"), billData); 
+                
+                // 2. Manage Customer List
+                if(!customerList.includes(name)) {
+                    customerList.push(name);
+                    await setDoc(custRef, { list: customerList });
+                }
+                
+                // 3. Auto-add to Customer Khata Bills (Udhar)
+                if(grandTotal > 0) {
+                    await addDoc(collection(db, "cust_khata_bills"), {
+                        customer: name, date: billDate, amount: grandTotal, billNo: currentBillNumber, timestamp: ts
+                    });
+                }
+                
+                // 4. Auto-add to Customer Khata Payments (Jama) if any payment made
+                if(amtPaid > 0) {
+                    await addDoc(collection(db, "cust_khata_payments"), {
+                        customer: name, date: billDate, amount: amtPaid, mode: "Bill Jama", remarks: "For Bill: " + currentBillNumber, timestamp: ts + 1
+                    });
+                }
+
+                // Reset Form
                 window.gstItems = []; 
                 document.getElementById('gst_cName').value = ''; 
                 document.getElementById('gst_cMobile').value = ''; 
                 document.getElementById('gst_cAddress').value = ''; 
                 document.getElementById('gst_cGST').value = ''; 
+                document.getElementById('gst_amtPaid').value = '';
+                document.getElementById('gst_amtDue').value = '0';
                 window.updateGstUI(); 
                 window.renderGstCalculations(); 
                 return true; 
@@ -826,27 +996,39 @@
         };
 
         // ====== ISOLATED PRINT COMMANDS ======
-        
         window.saveAndPrintGST = function() {
             if(window.gstItems.length === 0) { alert("⚠️ Bill is empty!"); return; }
             if(!document.getElementById('gst_cName').value.trim()) { alert("⚠️ Customer Name is required!"); return; }
             
-            // Set Body Class for GST Only Print
             document.body.className = 'print-gst';
             document.getElementById('invoiceArea').style.transform = 'scale(1)'; 
             window.print(); 
             
             setTimeout(async () => { 
                 let success = await saveGSTBillToDB(); 
-                if(success) console.log("✅ Bill Auto-Saved!"); 
+                if(success) console.log("✅ Bill & Khata Auto-Saved!"); 
             }, 100);
+        };
+        
+        window.saveAndWhatsAppGST = async function() {
+            if(window.gstItems.length === 0) { alert("⚠️ Bill is empty!"); return; }
+            const mobile = document.getElementById('gst_cMobile').value; 
+            if(!mobile || mobile.length !== 10) { alert("⚠️ Valid 10-digit mobile number needed for WhatsApp."); return; }
+            
+            let total = document.getElementById('gst_outTotal').innerText; 
+            let name = document.getElementById('gst_cName').value;
+            let success = await saveGSTBillToDB();
+            
+            if(success) { 
+                let msg = `*SAVITRI ELECTRONICS AND FURNITURE*\n\nHello ${name},\nYour Tax Invoice for ${total} has been generated.\n\nPlease find the attached PDF bill for your records.\nThank you for choosing us!`; 
+                window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`, '_blank'); 
+            }
         };
 
         window.printDirectPdf = function(id) {
             let b = globalGstInvoices.find(x => x.id === id); 
             if(!b) return;
             
-            // Populate background printable area
             document.getElementById('gst_outName').innerText = b.cName;
             document.getElementById('gst_outMobile').innerText = b.cMobile || ''; 
             document.getElementById('gst_boxMobile').style.display = b.cMobile ? 'block' : 'none';
@@ -889,39 +1071,15 @@
             document.getElementById('gst_tsTotalTax').innerText = (b.cgst + b.sgst).toFixed(2);
             document.getElementById('gst_outTaxWords').innerText = 'Indian Rupees ' + window.numToWords(Math.round(b.cgst + b.sgst)) + ' Only';
 
-            // Set Body Class for GST Only Print
             document.body.className = 'print-gst';
             document.getElementById('invoiceArea').style.transform = 'scale(1)';
             setTimeout(() => { window.print(); }, 100);
         };
 
-        window.printLedgerPdf = function() {
-            // Set Body Class for Ledger Only Print
-            document.body.className = 'print-ledger';
-            setTimeout(() => { window.print(); }, 100);
-        };
-
-        // ===================================================
-
-        window.saveAndWhatsAppGST = async function() {
-            if(window.gstItems.length === 0) { alert("⚠️ Bill is empty!"); return; }
-            const mobile = document.getElementById('gst_cMobile').value; 
-            if(!mobile || mobile.length !== 10) { alert("⚠️ Valid 10-digit mobile number needed for WhatsApp."); return; }
-            
-            let total = document.getElementById('gst_outTotal').innerText; 
-            let name = document.getElementById('gst_cName').value;
-            let success = await saveGSTBillToDB();
-            
-            if(success) { 
-                let msg = `*SAVITRI ELECTRONICS AND FURNITURE*\n\nHello ${name},\nYour Tax Invoice for ${total} has been generated.\n\nPlease find the attached PDF bill for your records.\nThank you for choosing us!`; 
-                window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`, '_blank'); 
-            }
-        };
-
         window.viewPastBill = function(id) {
             let b = globalGstInvoices.find(x => x.id === id); 
             if(!b) return;
-            window.currentViewingBillId = id; // Store for View Tab Print button
+            window.currentViewingBillId = id; 
             
             switchTab('tab-gst', 'View Invoice');
             document.getElementById('gstFormSection').style.display = 'none'; 
@@ -1005,6 +1163,16 @@
                 } 
             }); 
         }
+
+        window.updateKhataSelects = function() {
+            const sel = document.getElementById('khataCustomerSelect');
+            if(sel && typeof customerList !== 'undefined') {
+                const currentVal = sel.value;
+                sel.innerHTML = `<option value="" disabled selected>Select Customer to view Khata...</option>`;
+                customerList.sort().forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
+                if(currentVal && customerList.includes(currentVal)) sel.value = currentVal;
+            }
+        };
         
         window.addNewDealer = async function() { 
             const newDealer = prompt("Naye Dealer ka naam:"); 
@@ -1149,6 +1317,165 @@
             await deleteDoc(doc(db, colName, id)); 
         };
 
+        // ================= CUSTOMER KHATA LOGIC (NEW) =================
+        if(document.getElementById('khataPayDate')) document.getElementById('khataPayDate').valueAsDate = new Date();
+        let ckUnsubBills = null; let ckUnsubPays = null; let ckCustomer = "";
+        let ckTotalDueAmount = 0;
+        
+        window.loadCustomerKhata = function() {
+            const customer = document.getElementById('khataCustomerSelect').value;
+            if(!customer) return;
+            ckCustomer = customer;
+            document.getElementById('khataDashboard').style.display = 'block';
+            document.getElementById('khataPassbookTitle').innerText = customer + " - Khata";
+            
+            if(ckUnsubBills) ckUnsubBills();
+            if(ckUnsubPays) ckUnsubPays();
+            
+            let bData = []; let pData = [];
+            
+            function renderCustPassbook() {
+                let combined = [...bData, ...pData];
+                combined.sort((a,b) => { let dA = new Date(a.date).getTime(); let dB = new Date(b.date).getTime(); if(dA === dB) return (a.timestamp||0) - (b.timestamp||0); return dA - dB; });
+                
+                let tB = 0, tP = 0, rBal = 0; let html = '';
+                
+                combined.forEach(item => {
+                    let inA = item.type === 'bill' ? item.amount : 0; 
+                    let outA = item.type === 'pay' ? item.amount : 0;
+                    tB += inA; tP += outA; rBal += (inA - outA);
+                    
+                    let dS = new Date(item.date).toLocaleDateString('en-IN');
+                    let title = item.type === 'bill' ? `Udhar Bill: ${item.billNo}` : `Jama (${item.mode})`;
+                    let amtH = item.type === 'bill' ? `<span style="color:var(--ios-red);">+ ₹${inA.toLocaleString('en-IN')}</span>` : `<span style="color:var(--ios-green);">- ₹${outA.toLocaleString('en-IN')}</span>`;
+                    let bBadge = rBal > 0 ? `₹${Math.abs(rBal).toLocaleString()} Due` : (rBal < 0 ? `₹${Math.abs(rBal).toLocaleString()} Adv` : `Cleared`);
+                    
+                    let safeRemarks = (item.remarks || '').replace(/'/g, "\\'"); 
+                    let safeBillNo = (item.billNo || '').replace(/'/g, "\\'");
+                    
+                    // NEW EDIT, DELETE AND DETAILS BUTTONS
+                    let actionButtons = `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">`;
+                    
+                    if(item.type === 'bill') {
+                        actionButtons += `<button class="btn-edit" style="padding:4px 8px; font-size:11px; background:#e3f2fd;" onclick="viewKhataBillDetails('${safeBillNo}')">👁️ Details</button>`;
+                    }
+                    
+                    actionButtons += `
+                        <button class="btn-edit" style="padding:4px 8px; font-size:11px;" onclick="openCustEditModal('${item.id}', '${item.type}', '${item.date}', ${item.amount}, '${safeBillNo}', '${item.mode}', '${safeRemarks}')">✏️ Edit</button>
+                        <button class="btn-destructive" style="padding:4px 8px; font-size:11px;" onclick="deleteCustTxn('${item.id}', '${item.type}')">🗑️ Delete</button>
+                    </div>`;
+
+                    html = `<div class="record-item">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span style="font-size:13px; font-weight:600;">${dS} | ${title}</span><span style="font-weight:bold; font-size:15px;">${amtH}</span></div>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end;"><span style="color:gray; font-size:11px;">${item.remarks ? '('+item.remarks+')' : ''}</span><span style="font-weight:bold; font-size:12px; color:${rBal>0?'var(--ios-red)':'var(--ios-green)'}">Bal: ${bBadge}</span></div>
+                        ${actionButtons}
+                    </div>` + html;
+                });
+                
+                document.getElementById('khataTotalBill').innerText = "₹" + tB.toLocaleString('en-IN');
+                document.getElementById('khataTotalJama').innerText = "₹" + tP.toLocaleString('en-IN');
+                
+                let bal = tB - tP;
+                ckTotalDueAmount = bal;
+                
+                let bb = document.getElementById('khataBalanceBox');
+                let bv = document.getElementById('khataBalanceValue');
+                let bt = document.getElementById('khataBalanceTitle');
+                
+                if(bal > 0) { bb.style.background = "#ffebee"; bv.style.color = "var(--ios-red)"; bv.innerText = "₹" + bal.toLocaleString('en-IN'); bt.innerText="Baki (Due)"; }
+                else if (bal < 0) { bb.style.background = "#e8f5e9"; bv.style.color = "var(--ios-green)"; bv.innerText = "₹" + Math.abs(bal).toLocaleString('en-IN'); bt.innerText="Advance Jama"; }
+                else { bb.style.background = "#f5f5f5"; bv.style.color = "var(--ios-text-main)"; bv.innerText = "₹0"; bt.innerText="Hisaab Clear"; }
+                
+                document.getElementById('khataPassbookList').innerHTML = html || '<div class="record-item" style="color:gray;">No records found.</div>';
+            }
+            
+            ckUnsubBills = onSnapshot(query(collection(db, "cust_khata_bills"), where("customer", "==", customer)), (snap) => { bData = []; snap.forEach(doc => { let d=doc.data(); bData.push({id:doc.id, type:'bill', date:d.date, amount:Number(d.amount), billNo:d.billNo, timestamp:d.timestamp, remarks:''}); }); renderCustPassbook(); });
+            ckUnsubPays = onSnapshot(query(collection(db, "cust_khata_payments"), where("customer", "==", customer)), (snap) => { pData = []; snap.forEach(doc => { let d=doc.data(); pData.push({id:doc.id, type:'pay', date:d.date, amount:Number(d.amount), mode:d.mode, remarks:d.remarks, timestamp:d.timestamp}); }); renderCustPassbook(); });
+        };
+        
+        document.getElementById('saveKhataPaymentBtn')?.addEventListener('click', async () => {
+            const customer = document.getElementById('khataCustomerSelect').value;
+            const amount = document.getElementById('khataPayAmount').value;
+            if(!customer || !amount) { alert("Customer aur Amount bharein!"); return; }
+            
+            await addDoc(collection(db, "cust_khata_payments"), { customer, date: document.getElementById('khataPayDate').value, amount: Number(amount), mode: document.getElementById('khataPayMode').value, remarks: document.getElementById('khataPayRemarks').value, timestamp: Date.now() });
+            
+            document.getElementById('khataPayAmount').value = '';
+            document.getElementById('khataPayRemarks').value = '';
+            alert("✅ Customer Jama Updated!");
+        });
+
+        // --- NEW EDIT & DELETE FUNCTIONS FOR KHATA --- //
+        window.deleteCustTxn = async function(id, type) {
+            if(!confirm("⚠️ Kya aap sach mein is entry ko delete karna chahte hain?")) return;
+            let colName = type === 'bill' ? 'cust_khata_bills' : 'cust_khata_payments';
+            await deleteDoc(doc(db, colName, id));
+        };
+
+        window.openCustEditModal = function(id, type, date, amount, billNo, mode, remarks) {
+            document.getElementById('editCustTxnId').value = id;
+            document.getElementById('editCustTxnType').value = type;
+            document.getElementById('editCustTxnDate').value = date;
+            document.getElementById('editCustTxnAmount').value = amount;
+            
+            if(type === 'bill') {
+                document.getElementById('editCustBillFields').style.display = 'block';
+                document.getElementById('editCustPayFields').style.display = 'none';
+                document.getElementById('editCustTxnBillNo').value = billNo;
+            } else {
+                document.getElementById('editCustBillFields').style.display = 'none';
+                document.getElementById('editCustPayFields').style.display = 'block';
+                document.getElementById('editCustTxnMode').value = mode || 'Cash';
+                document.getElementById('editCustTxnRemarks').value = remarks;
+            }
+            document.getElementById('editCustTxnModal').style.display = 'block';
+        };
+
+        window.closeCustEditTxnModal = function() {
+            document.getElementById('editCustTxnModal').style.display = 'none';
+        };
+
+        window.saveCustTxnEdit = async function() {
+            const id = document.getElementById('editCustTxnId').value;
+            const type = document.getElementById('editCustTxnType').value;
+            const date = document.getElementById('editCustTxnDate').value;
+            const amount = Number(document.getElementById('editCustTxnAmount').value);
+            
+            if(!date || !amount) { alert("Date aur Amount required hai!"); return; }
+            
+            const btn = event.target;
+            btn.innerText = "Updating...";
+            
+            try {
+                if(type === 'bill') {
+                    const billNo = document.getElementById('editCustTxnBillNo').value.trim().toUpperCase();
+                    await updateDoc(doc(db, "cust_khata_bills", id), { date, amount, billNo });
+                } else {
+                    const mode = document.getElementById('editCustTxnMode').value;
+                    const remarks = document.getElementById('editCustTxnRemarks').value;
+                    await updateDoc(doc(db, "cust_khata_payments", id), { date, amount, mode, remarks });
+                }
+                closeCustEditTxnModal();
+                btn.innerText = "💾 Update";
+                alert("✅ Khata Entry Updated Successfully!");
+            } catch(e) {
+                alert("Error updating transaction.");
+                btn.innerText = "💾 Update";
+            }
+        };
+
+        window.sendCustomerReminder = function() {
+            if(ckTotalDueAmount <= 0) {
+                alert("Iss customer ka koi Baki (Due) nahi hai.");
+                return;
+            }
+            let mobile = prompt("Customer ka WhatsApp number enter karein (10 digits):");
+            if(mobile && mobile.length >= 10) {
+                let msg = `*SAVITRI ELECTRONICS AND FURNITURE*\n\nNamaskar ${ckCustomer},\nAapke khata mein *₹${ckTotalDueAmount}* baki (due) hai.\nKripya samay par jama karayein.\nDhanyawad!`;
+                window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            }
+        };
+
         // ================= HOME DASHBOARD, PDF MODAL & EDIT =================
         let hUnsubBills = null; let hUnsubPays = null;
         let homeBillsData = []; let homePaysData = [];
@@ -1275,6 +1602,11 @@
                 alert("Error updating transaction."); 
                 btn.innerText = "💾 Update"; 
             }
+        };
+
+        window.printLedgerPdf = function() {
+            document.body.className = 'print-ledger';
+            setTimeout(() => { window.print(); }, 100);
         };
 
         onSnapshot(query(collection(db, "dealer_payments")), (snap) => { 
@@ -1478,6 +1810,48 @@
         
         window.deleteBooking = function(id) { 
             if(confirm("✅ Is Customer ki Delivery/Payment complete ho gayi?")) deleteDoc(doc(db, "sales_bookings", id)); 
+        };
+
+        // --- NEW: VIEW BILL DETAILS FROM KHATA --- //
+        window.viewKhataBillDetails = function(billNo) {
+            if(!billNo) return;
+            
+            let bill = globalGstInvoices.find(b => b.billNo === billNo);
+            
+            if(!bill) {
+                alert("⚠️ Is bill ki details nahi mili. Ye shayad purana ya manual udhar entry ho sakta hai.");
+                return;
+            }
+
+            document.getElementById('vk_name').innerText = bill.cName || '-';
+            document.getElementById('vk_mobile').innerText = bill.cMobile || 'N/A';
+            document.getElementById('vk_address').innerText = bill.cAddress || 'N/A';
+            document.getElementById('vk_billNo').innerText = bill.billNo;
+            document.getElementById('vk_date').innerText = new Date(bill.date).toLocaleDateString('en-IN');
+            
+            let itemsHtml = '';
+            if(bill.items && bill.items.length > 0) {
+                bill.items.forEach(item => {
+                    let itemTotal = item.incRate * item.qty;
+                    itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span>${item.qty} x ${item.name}</span>
+                        <span style="font-weight:bold;">₹${itemTotal.toLocaleString('en-IN')}</span>
+                    </div>`;
+                });
+            } else {
+                itemsHtml = '<div>No items found</div>';
+            }
+            document.getElementById('vk_itemsList').innerHTML = itemsHtml;
+            
+            document.getElementById('vk_total').innerText = '₹ ' + (bill.grandTotal || 0).toLocaleString('en-IN');
+            document.getElementById('vk_paid').innerText = '₹ ' + (bill.paid || 0).toLocaleString('en-IN');
+            document.getElementById('vk_due').innerText = '₹ ' + (bill.due || 0).toLocaleString('en-IN');
+            
+            document.getElementById('viewKhataBillModal').style.display = 'block';
+        };
+
+        window.closeKhataBillModal = function() {
+            document.getElementById('viewKhataBillModal').style.display = 'none';
         };
 
     </script>
