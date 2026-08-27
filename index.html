@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Savitri Electronics ERP 3.2 (Pro Khata & GST)</title>
+    <title>Savitri Electronics ERP 4.0 (Smart & Fully Editable)</title>
     <style>
         /* ================= 1. CORE VARIABLES & SETUP ================= */
         :root {
@@ -103,19 +103,22 @@
         .nav-item.active { color: var(--ios-blue); }
         .nav-icon { font-size: 22px; margin-bottom: 4px; }
 
-        /* ================= 12. PRINT STYLES (100% FIXED ISOLATION) ================= */
+        /* ================= 12. PRINT STYLES (100% FIXED ISOLATION + NEW TOKEN) ================= */
         @page { size: A4 portrait; margin: 10mm; }
         @media print {
             body { background: white; }
             body * { visibility: hidden; }
             
-            #invoiceArea, #printableLedgerArea { display: none !important; }
+            #invoiceArea, #printableLedgerArea, #tokenArea { display: none !important; }
             
             body.print-gst #invoiceArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
             body.print-gst #invoiceArea *, body.print-gst #invoiceArea { visibility: visible; }
             
             body.print-ledger #printableLedgerArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
             body.print-ledger #printableLedgerArea *, body.print-ledger #printableLedgerArea { visibility: visible; }
+            
+            body.print-token #tokenArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 20px; box-shadow: none; }
+            body.print-token #tokenArea *, body.print-token #tokenArea { visibility: visible; }
             
             .preview-wrapper, .modal-overlay { background: transparent; padding: 0; overflow: visible; display: block !important; position: static; }
             .a4-container, .ledger-a4 { width: 100% !important; height: auto !important; max-width: 100%; box-shadow: none; margin: 0; padding: 0; }
@@ -147,6 +150,15 @@
                     <h2 style="margin: 0 0 5px 0; font-size: 24px;">Welcome Back!</h2>
                     <p style="margin: 0; opacity: 0.9; font-size: 15px;">Savitri Electronics ERP is Locked & Secure.</p>
                 </div>
+                
+                <!-- QUICK ACTION SMART BUTTONS -->
+                <div class="section-header" style="margin-top:10px;"><div class="section-title">⚡ Quick Actions</div></div>
+                <div class="dash-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <button class="btn-primary" onclick="switchTab('tab-gst', 'Create GST Bill')" style="background:var(--ios-blue); font-size:13px; padding:10px; margin-top:0;">🧾 Naya Bill</button>
+                    <button class="btn-primary" onclick="switchTab('tab-cust-khata', 'Customer Khata')" style="background:var(--ios-orange); font-size:13px; padding:10px; margin-top:0;">📒 Udhar/Jama</button>
+                    <button class="btn-primary" onclick="switchTab('tab-realstock', 'Real Stock')" style="background:var(--ios-green); font-size:13px; padding:10px; margin-top:0;">📦 Maal Add</button>
+                </div>
+
                 <div class="dash-grid">
                     <div class="dash-card"><div class="dash-title">Total Maal (Purchases)</div><div class="dash-value" style="color:var(--ios-blue);" id="dashPurchase">₹0</div></div>
                     <div class="dash-card"><div class="dash-title">Market Due (Payable)</div><div class="dash-value" style="color:var(--ios-red);" id="dashMarketDue">₹0</div></div>
@@ -189,7 +201,13 @@
 
                     <div class="gst-box hide-print">
                         <h4 style="margin:0 0 10px 0; color:#444;">🛒 Add Items (Incl. 18% GST)</h4>
-                        <div class="form-group" style="margin-bottom:10px;"><label>Item Name</label><input type="text" id="gst_iName" placeholder="e.g. Battery 150Ah"></div>
+                        
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label>Item Name (From Stock)</label>
+                            <input type="text" id="gst_iName" list="gstStockList" placeholder="Search Inventory Item..." oninput="autoFillGstPrice()">
+                            <datalist id="gstStockList"></datalist>
+                        </div>
+                        
                         <div style="display:flex; gap:10px; margin-bottom:10px;">
                             <div class="form-group" style="flex:1;"><label>HSN/SAC</label><input type="text" id="gst_iHSN" placeholder="8507"></div>
                             <div class="form-group" style="flex:1;"><label>Qty</label><input type="number" id="gst_iQty" value="1" min="1"></div>
@@ -204,7 +222,6 @@
                             <tbody id="gst_summaryBody"></tbody>
                         </table>
                         
-                        <!-- NEW: Customer Khata Payment Inputs -->
                         <div style="display:flex; gap:10px; margin-top:15px; background:#e8f5e9; padding:15px; border-radius:8px; border:1px solid var(--ios-green);">
                             <div class="form-group" style="flex:1; margin-bottom:0;">
                                 <label style="color:var(--ios-green); font-size:13px; font-weight:bold;">Jama Kiya (₹)</label>
@@ -215,7 +232,6 @@
                                 <input type="text" id="gst_amtDue" readonly value="0" style="width:100%; padding:8px; text-align:right; font-weight:bold; color:var(--ios-red); background:transparent; border:none; font-size:18px; margin-top:5px;">
                             </div>
                         </div>
-                        <!-- END NEW -->
 
                         <div style="display:flex; gap:10px; margin-top:15px;">
                             <button class="btn-primary" onclick="saveAndPrintGST()" style="flex:1; margin-top:0; background:var(--ios-blue);">💾 Save & Print</button>
@@ -317,6 +333,7 @@
                     </div>
                 </div>
             </div>
+            
             <!-- 3. INVOICE MEMO TAB -->
             <div id="tab-memo" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px; margin-bottom: 10px;">GST Invoice Memos</div>
@@ -412,11 +429,10 @@
                 <div class="card" id="bookingList"></div>
             </div>
 
-            <!-- 8. CUSTOMER KHATA TAB (UPDATED WITH SEARCH BOX) -->
+            <!-- 8. CUSTOMER KHATA TAB -->
             <div id="tab-cust-khata" class="tab-content hide-print">
                 <div class="section-title" style="margin-left: 12px;">Customer Udhar Khata</div>
                 <div class="card" style="margin-top: 8px; padding: 12px; background: white;">
-                    <!-- Naya Searchable Input yahan add kiya hai -->
                     <input type="text" id="khataCustomerSelect" list="khataCustomerDatalist" placeholder="🔍 Search Customer Name..." style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none; box-sizing:border-box;" onchange="loadCustomerKhata()">
                     <datalist id="khataCustomerDatalist"></datalist>
                 </div>
@@ -459,6 +475,26 @@
 
         <!-- ================= GLOBAL MODALS ================= -->
         
+        <!-- ADVANCE BOOKING TOKEN (HIDDEN FOR PRINT) -->
+        <div id="tokenArea" class="hide-print" style="display:none; text-align:center; font-family:Arial; width:100%; max-width:400px; margin:auto; border:2px dashed #000; padding:20px;">
+            <h2>SAVITRI ELECTRONICS</h2>
+            <h3 style="margin-top:0;">ADVANCE BOOKING TOKEN</h3>
+            <hr style="border-top:1px dashed #000;">
+            <div style="text-align:left; font-size:14px; margin-top:10px;">
+                <p><strong>Customer:</strong> <span id="tokName"></span></p>
+                <p><strong>Mobile:</strong> <span id="tokMobile"></span></p>
+                <p><strong>Delivery Date:</strong> <span id="tokDate"></span></p>
+                <p><strong>Items Booked:</strong> <br><span id="tokItems" style="white-space:pre-wrap;"></span></p>
+            </div>
+            <hr style="border-top:1px dashed #000;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:16px;">
+                <span>Total Bill: <br>₹<span id="tokTotal">0</span></span>
+                <span style="color:green;">Advance: <br>₹<span id="tokAdv">0</span></span>
+                <span style="color:red;">Baki (Due): <br>₹<span id="tokDue">0</span></span>
+            </div>
+            <p style="font-size:10px; margin-top:20px; color:gray;">Please bring this token at the time of delivery.</p>
+        </div>
+
         <!-- PDF LEDGER MODAL -->
         <div id="pdfLedgerModal" class="modal-overlay">
             <div style="text-align:center; margin-bottom: 15px;" class="hide-print">
@@ -599,7 +635,7 @@
             <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-cust-khata', 'Customer Khata')"><span class="nav-icon">🧑‍🤝‍🧑</span><span>Udhar</span></div>
         </div>
     </div>
-    
+
     <!-- MAIN APP JAVASCRIPT & FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -617,12 +653,18 @@
         const app = initializeApp(firebaseConfig); 
         const db = getFirestore(app);
 
+        // Global Variable for Real Stock to be accessible everywhere
+        let globalRealStock = [];
+
         // ================= UI SWITCHING & SECURITY =================
         window.switchTab = function(tabId, titleText) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
+            
+            let activeNavItem = Array.from(document.querySelectorAll('.nav-item')).find(item => item.getAttribute('onclick') && item.getAttribute('onclick').includes(tabId));
+            if(activeNavItem) activeNavItem.classList.add('active');
+            
             document.getElementById('top-title').innerText = titleText;
             window.scrollTo(0, 0);
             if(tabId === 'tab-gst' && window.scaleInvoice) window.scaleInvoice();
@@ -741,6 +783,15 @@
             document.getElementById('gst_outDate').innerText = d ? new Date(d).toLocaleDateString('en-IN') : '';
         };
 
+        // Auto Fill Price from Stock
+        window.autoFillGstPrice = function() {
+            let val = document.getElementById('gst_iName').value.trim();
+            let stockItem = globalRealStock.find(stock => stock.modelName.toUpperCase() === val.toUpperCase());
+            if(stockItem) {
+                document.getElementById('gst_iRate').value = stockItem.rate;
+            }
+        };
+
         window.addGstItem = function() {
             const name = document.getElementById('gst_iName').value.trim(); 
             const hsn = document.getElementById('gst_iHSN').value.trim() || ''; 
@@ -767,7 +818,6 @@
             window.renderGstCalculations(); 
         };
 
-        // Calculate Baki (Due) when Jama amount is entered
         window.calculateGstDue = function() {
             let jama = Number(document.getElementById('gst_amtPaid').value) || 0;
             let baki = window.currentGrandTotal - jama;
@@ -859,7 +909,6 @@
         let globalGstInvoices = []; 
         let currentBillNumber = "SE/26-27/001";
         
-        // Setup Customer List reference
         let customerList = []; 
         const custRef = doc(db, "app_settings", "customers");
         onSnapshot(custRef, (docSnap) => { 
@@ -922,23 +971,18 @@
             }); 
         };
         
-        // NEW AUTO DELETE LOGIC
         window.deleteGstBill = async function(id) { 
             if(!confirm("⚠️ Kya aap sach mein is GST Bill ko delete karna chahte hain? \n\nIska Udhar aur Jama record bhi Khata se permanently delete ho jayega!")) return;
             
             let bill = globalGstInvoices.find(x => x.id === id);
             if(bill) {
                 let bNo = bill.billNo;
-                
-                // 1. Delete main GST invoice
                 await deleteDoc(doc(db, "gst_invoices", id));
                 
-                // 2. Delete from Udhar (cust_khata_bills)
                 const qBills = query(collection(db, "cust_khata_bills"), where("billNo", "==", bNo));
                 const snapBills = await getDocs(qBills);
                 snapBills.forEach(async (d) => { await deleteDoc(doc(db, "cust_khata_bills", d.id)); });
 
-                // 3. Delete from Jama (cust_khata_payments)
                 const qPays = query(collection(db, "cust_khata_payments"), where("customer", "==", bill.cName));
                 const snapPays = await getDocs(qPays);
                 snapPays.forEach(async (d) => { 
@@ -954,7 +998,7 @@
             if(window.gstItems.length === 0) return false;
             const rawName = document.getElementById('gst_cName').value.trim(); 
             if(!rawName) return false;
-            const name = rawName.toUpperCase(); // Standardize name
+            const name = rawName.toUpperCase();
             
             let totalBase = 0; 
             window.gstItems.forEach(i => totalBase += i.baseAmount);
@@ -980,30 +1024,40 @@
             };
             
             try { 
-                // 1. Save GST Bill
                 await addDoc(collection(db, "gst_invoices"), billData); 
+
+                // SMART AUTO INVENTORY DEDUCTION
+                for (let i = 0; i < window.gstItems.length; i++) {
+                    let billedItem = window.gstItems[i];
+                    let stockItem = globalRealStock.find(stock => stock.modelName.toUpperCase() === billedItem.name.toUpperCase());
+                    
+                    if(stockItem) {
+                        let updatedQty = (stockItem.qty || 0) - billedItem.qty;
+                        if(updatedQty < 0) updatedQty = 0;
+                        await updateDoc(doc(db, "real_inventory", stockItem.id), { 
+                            qty: updatedQty, 
+                            updatedAt: Date.now() 
+                        });
+                    }
+                }
                 
-                // 2. Manage Customer List
                 if(!customerList.includes(name)) {
                     customerList.push(name);
                     await setDoc(custRef, { list: customerList });
                 }
                 
-                // 3. Auto-add to Customer Khata Bills (Udhar)
                 if(grandTotal > 0) {
                     await addDoc(collection(db, "cust_khata_bills"), {
                         customer: name, date: billDate, amount: grandTotal, billNo: currentBillNumber, timestamp: ts
                     });
                 }
                 
-                // 4. Auto-add to Customer Khata Payments (Jama)
                 if(amtPaid > 0) {
                     await addDoc(collection(db, "cust_khata_payments"), {
                         customer: name, date: billDate, amount: amtPaid, mode: "Bill Jama", remarks: "For Bill: " + currentBillNumber, timestamp: ts + 1
                     });
                 }
 
-                // Reset Form
                 window.gstItems = []; 
                 document.getElementById('gst_cName').value = ''; 
                 document.getElementById('gst_cMobile').value = ''; 
@@ -1162,6 +1216,7 @@
 
         if(window.updateGstUI) window.updateGstUI();
         if(window.renderGstCalculations) window.renderGstCalculations();
+
         // ================= ERP LOGIC (REST TABS) =================
         let dealersList = ["SAMSUNG DISTRIBUTOR", "LG AGENCY"]; 
         const dealerRef = doc(db, "app_settings", "dealers");
@@ -1186,7 +1241,6 @@
             }); 
         }
 
-        // NEW: Update Customer Datalist for Search Box
         window.updateKhataSelects = function() {
             const dataList = document.getElementById('khataCustomerDatalist');
             if(dataList && typeof customerList !== 'undefined') {
@@ -1338,7 +1392,7 @@
             await deleteDoc(doc(db, colName, id)); 
         };
 
-        // ================= CUSTOMER KHATA LOGIC (NEW) =================
+        // ================= CUSTOMER KHATA LOGIC =================
         if(document.getElementById('khataPayDate')) document.getElementById('khataPayDate').valueAsDate = new Date();
         let ckUnsubBills = null; let ckUnsubPays = null; let ckCustomer = "";
         let ckTotalDueAmount = 0;
@@ -1374,7 +1428,6 @@
                     let safeRemarks = (item.remarks || '').replace(/'/g, "\\'"); 
                     let safeBillNo = (item.billNo || '').replace(/'/g, "\\'");
                     
-                    // EDIT, DELETE AND DETAILS BUTTONS
                     let actionButtons = `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">`;
                     
                     if(item.type === 'bill') {
@@ -1426,7 +1479,6 @@
             alert("✅ Customer Jama Updated!");
         });
 
-        // EDIT & DELETE FUNCTIONS FOR KHATA
         window.deleteCustTxn = async function(id, type) {
             if(!confirm("⚠️ Kya aap sach mein is entry ko delete karna chahte hain?")) return;
             let colName = type === 'bill' ? 'cust_khata_bills' : 'cust_khata_payments';
@@ -1485,19 +1537,14 @@
             }
         };
 
-        // NEW WhatsApp Logic with Auto-fill Number
         window.sendCustomerReminder = function() {
             if(ckTotalDueAmount <= 0) {
                 alert("Iss customer ka koi Baki (Due) nahi hai.");
                 return;
             }
-            
-            // Database se is customer ka number dhundhna
             let custMobile = "";
             let pastBill = globalGstInvoices.find(b => b.cName.toUpperCase() === ckCustomer.toUpperCase() && b.cMobile);
-            if(pastBill) {
-                custMobile = pastBill.cMobile;
-            }
+            if(pastBill) custMobile = pastBill.cMobile;
 
             let mobile = prompt("Customer ka WhatsApp number:", custMobile);
             if(mobile && mobile.length >= 10) {
@@ -1655,20 +1702,25 @@
         }
 
         // ================= REAL STOCK TAB =================
-        let globalRealStock = [];
-        
         onSnapshot(query(collection(db, "real_inventory"), orderBy("modelName", "asc")), (snap) => { 
             const list = document.getElementById('realStockList'); 
-            const dataList = document.getElementById('modelSuggestList'); 
+            const dataList = document.getElementById('modelSuggestList');
+            const gstStockList = document.getElementById('gstStockList'); 
+            
             if(list) list.innerHTML = ''; 
             if(dataList) dataList.innerHTML = ''; 
+            if(gstStockList) gstStockList.innerHTML = '';
+            
             globalRealStock = []; 
             let html = ''; let totalStockCount = 0; 
             
             snap.forEach((docSnap) => { 
                 const data = docSnap.data(); data.id = docSnap.id; globalRealStock.push(data); 
                 totalStockCount += (data.qty || 0); 
+                
                 if(dataList) dataList.innerHTML += `<option value="${data.modelName}">`; 
+                if(gstStockList && data.qty > 0) gstStockList.innerHTML += `<option value="${data.modelName}">`; 
+                
                 if(list) { 
                     let stockBadge = data.qty > 0 ? `<span style="background:#e8f5e9; color:var(--ios-green); padding:2px 6px; border-radius:4px; font-weight:bold;">${data.qty} Pcs</span>` : `<span style="background:#ffebee; color:var(--ios-red); padding:2px 6px; border-radius:4px; font-weight:bold;">Out of Stock</span>`; 
                     html += `<div class="record-item rs-card" data-search="${data.modelName.toLowerCase()} ${data.brand.toLowerCase()}"><div style="display:flex; justify-content:space-between; align-items:center;"><div class="product-title">${data.modelName}</div>${stockBadge}</div><div class="data-row"><span>Brand: <strong>${data.brand}</strong></span><span style="color:var(--ios-blue); font-weight:bold;">Rate: ₹${Number(data.rate).toLocaleString('en-IN')}</span></div><div class="action-buttons" style="margin-top:12px;"><button class="btn-edit" onclick="editRealStock('${data.id}', '${data.modelName}', '${data.brand}', ${data.rate}, ${data.qty})" style="flex:2;">✏️ Edit</button><button class="btn-edit" style="background:#e8f5e9; color:var(--ios-green);" onclick="adjustQty('${data.id}', ${data.qty}, 1)">+ 1 Pcs</button><button class="btn-destructive" style="background:#ffebee; color:var(--ios-red);" onclick="adjustQty('${data.id}', ${data.qty}, -1)">- 1 Pcs</button></div></div>`; 
@@ -1812,6 +1864,22 @@
             btn.innerText = "Save Booking"; 
         });
         
+        window.printToken = function(name, mobile, date, items, total, adv) {
+            document.getElementById('tokName').innerText = name;
+            document.getElementById('tokMobile').innerText = mobile;
+            document.getElementById('tokDate').innerText = new Date(date).toLocaleDateString('en-IN');
+            document.getElementById('tokItems').innerText = items;
+            document.getElementById('tokTotal').innerText = total;
+            document.getElementById('tokAdv').innerText = adv;
+            document.getElementById('tokDue').innerText = total - adv;
+            
+            document.body.className = 'print-token';
+            setTimeout(() => { 
+                window.print(); 
+                document.body.className = ''; 
+            }, 100);
+        };
+
         onSnapshot(query(collection(db, "sales_bookings")), (snap) => { 
             const list = document.getElementById('bookingList'); 
             const todayList = document.getElementById('todayDeliveryList'); 
@@ -1828,7 +1896,14 @@
             tempA.forEach((d) => { 
                 tAdv += (d.advanceAmount || 0); 
                 let bal = (d.totalBill||0) - (d.advanceAmount||0); 
-                let html = `<div class="record-item"><div style="display:flex; justify-content:space-between;"><div class="product-title">👤 ${d.customerName}</div><div style="font-weight:700; color:var(--ios-orange);">Adv: ₹${d.advanceAmount.toLocaleString('en-IN')}</div></div><div style="font-size:13px; color:#444; margin:6px 0; white-space:pre-wrap; line-height:1.4;">${d.items}</div><div class="data-row"><span>Total Bill: ₹${(d.totalBill||0).toLocaleString('en-IN')}</span><span style="color:var(--ios-red); font-weight:bold;">Due: ₹${bal.toLocaleString('en-IN')}</span></div><div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ios-purple); font-weight:600;">🚚 Del: ${new Date(d.deliveryDate).toLocaleDateString('en-IN')}</span><button onclick="deleteBooking('${d.id}')" style="background:var(--ios-green);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">✅ Complete</button></div></div>`; 
+                let safeName = (d.customerName || '').replace(/'/g, "\\'");
+                let safeMobile = (d.mobile || '').replace(/'/g, "\\'");
+                let safeItems = (d.items || '').replace(/`/g, "\\`");
+                
+                let tokenBtn = `<button onclick="printToken('${safeName}', '${safeMobile}', '${d.deliveryDate}', \`${safeItems}\`, ${d.totalBill||0}, ${d.advanceAmount||0})" style="background:var(--ios-blue);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer; margin-right:5px;">🖨️ Token</button>`;
+                
+                let html = `<div class="record-item"><div style="display:flex; justify-content:space-between;"><div class="product-title">👤 ${d.customerName}</div><div style="font-weight:700; color:var(--ios-orange);">Adv: ₹${d.advanceAmount.toLocaleString('en-IN')}</div></div><div style="font-size:13px; color:#444; margin:6px 0; white-space:pre-wrap; line-height:1.4;">${d.items}</div><div class="data-row"><span>Total Bill: ₹${(d.totalBill||0).toLocaleString('en-IN')}</span><span style="color:var(--ios-red); font-weight:bold;">Due: ₹${bal.toLocaleString('en-IN')}</span></div><div style="margin-top:10px; display:flex; justify-content:flex-end; align-items:center;"><span style="font-size:12px; color:var(--ios-purple); font-weight:600; margin-right:auto;">🚚 Del: ${new Date(d.deliveryDate).toLocaleDateString('en-IN')}</span>${tokenBtn}<button onclick="deleteBooking('${d.id}')" style="background:var(--ios-green);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">✅ Complete</button></div></div>`; 
+                
                 if(list) list.innerHTML += html; 
                 if(d.deliveryDate === todayStr && todayList) { todayList.innerHTML += html; todayCount++; } 
             }); 
