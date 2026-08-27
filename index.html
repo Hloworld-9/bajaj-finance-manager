@@ -1,3 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Savitri Electronics ERP 3.2 (Pro Khata & GST)</title>
+    <style>
+        /* ================= 1. CORE VARIABLES & SETUP ================= */
+        :root {
+            --ios-bg: #f2f2f7; --ios-card: #ffffff; --ios-text-main: #000000;
+            --ios-text-muted: #8e8e93; --ios-blue: #007aff; --ios-green: #34c759;
+            --ios-red: #ff3b30; --ios-orange: #ff9500; --ios-purple: #af52de;
+            --ios-border: #e5e5ea;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--ios-bg); color: var(--ios-text-main); margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        
+        /* ================= 2. APP CONTAINER & LOCK SCREEN ================= */
+        .app-container { max-width: 600px; margin: 0 auto; background: var(--ios-bg); min-height: 100vh; position: relative; padding-bottom: 80px; display: none; }
+        .lock-screen { position: fixed; top:0; left:0; width:100%; height:100%; background: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .lock-icon { font-size: 60px; margin-bottom: 20px; }
+        .pin-input { font-size: 24px; padding: 15px; text-align: center; letter-spacing: 10px; width: 200px; border: 2px solid var(--ios-border); border-radius: 12px; outline: none; margin-bottom: 20px; background: var(--ios-bg); }
+        .pin-input:focus { border-color: var(--ios-blue); }
+
+        /* ================= 3. TOP HEADER & TABS ================= */
+        .top-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; padding: 16px 20px; border-bottom: 1px solid var(--ios-border); display: flex; justify-content: space-between; align-items: center; }
+        .header-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+        .tab-content { display: none; padding: 15px 12px; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ================= 4. CARDS & TYPOGRAPHY ================= */
+        .card { background: var(--ios-card); border-radius: 12px; padding: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 15px; overflow: hidden; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 5px 12px; }
+        .section-title { font-size: 13px; font-weight: 600; color: var(--ios-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge { background: var(--ios-blue); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+
+        /* ================= 5. FORMS & INPUTS ================= */
+        .input-row { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--ios-border); background: white; }
+        .input-row:last-child { border-bottom: none; }
+        .input-row label { width: 100px; font-size: 15px; font-weight: 500; color: var(--ios-text-main); }
+        .input-wrapper { flex: 1; display: flex; align-items: center; }
+        .input-wrapper input, .input-wrapper select { flex: 1; border: none; font-size: 15px; outline: none; background: transparent; color: var(--ios-text-main); padding: 5px 0; }
+        .input-wrapper input::placeholder { color: #c7c7cc; }
+        .btn-add-cat { background: var(--ios-blue); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 18px; line-height: 28px; text-align: center; cursor: pointer; margin-left: 10px; }
+
+        /* ================= 6. BUTTONS ================= */
+        .btn-primary { background-color: var(--ios-blue); color: white; border: none; border-radius: 10px; padding: 14px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-export { background: transparent; color: var(--ios-blue); border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-edit { background: #f2f2f7; color: var(--ios-blue); border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-destructive { background: #ffebee; color: var(--ios-red); border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+        /* ================= 7. LIST ITEMS & DASHBOARDS ================= */
+        .record-item { padding: 15px; border-bottom: 1px solid var(--ios-border); background: white; }
+        .record-item:last-child { border-bottom: none; }
+        .product-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .data-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--ios-text-muted); margin-top: 4px; }
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+        .dash-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: center; }
+        .dash-title { font-size: 13px; color: var(--ios-text-muted); font-weight: 500; margin-bottom: 8px; }
+        .dash-value { font-size: 22px; font-weight: 700; color: var(--ios-text-main); }
+
+        /* ================= 8. ADVANCED SALES UI ================= */
+        .sales-item-row { display: grid; grid-template-columns: 3fr 1fr 2fr auto; gap: 8px; padding: 10px 0; border-bottom: 1px dashed #e0e0e0; align-items: center; }
+        .sales-item-row input { border: 1px solid var(--ios-border); padding: 8px; border-radius: 6px; font-size: 14px; outline: none; width: 100%; box-sizing: border-box; }
+        .btn-add-item { background: #e8f5e9; color: var(--ios-green); border: none; padding: 8px 15px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 10px; width: 100%; }
+        .btn-remove-item { background: transparent; color: var(--ios-red); border: none; font-size: 16px; cursor: pointer; font-weight: bold; }
+
+        /* ================= 9. GST INVOICE SPECIFIC STYLES ================= */
+        .gst-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; background: white; }
+        .gst-full { grid-column: span 2; }
+        .gst-box { background: #f9f9fc; padding: 12px; border-radius: 8px; border: 1px solid var(--ios-border); margin: 0 15px 15px 15px; }
+        .added-items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+        .added-items-table th, .added-items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .added-items-table th { background: #eee; }
+        
+        .preview-wrapper { width: 100%; background: #525659; padding: 20px 0; display: flex; justify-content: center; overflow: hidden; position: relative; margin-top: 15px; }
+        .a4-container { width: 794px; height: 1123px; background: white; color: black; font-family: Arial, sans-serif; font-size: 11px; box-sizing: border-box; transform-origin: top center; flex-shrink: 0; padding-bottom: 10px; }
+        .border-box { border: 1px solid #000; height: calc(100% - 30px); display: flex; flex-direction: column; box-sizing: border-box; }
+        
+        .inv-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .inv-table th, .inv-table td { border: 1px solid #000; padding: 4px; vertical-align: top; word-wrap: break-word;}
+        .inv-table th { background-color: #f9f9f9; text-align: center; font-size: 10px; }
+        .no-top-border th, .no-top-border td { border-top: none; border-bottom: none; }
+        
+        .items-wrapper { flex: 1 1 auto; display: flex; flex-direction: column; border-bottom: 1px solid #000;}
+        .items-wrapper table { height: 100%; }
+        .filler-row { height: 100%; }
+        .filler-row td { border-bottom: none !important; border-top: none !important; }
+        .text-center { text-align: center; } .text-right { text-align: right; } .bold { font-weight: bold; }
+
+        /* ================= 10. MODAL & PDF STATEMENT STYLES ================= */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99999; overflow-y: auto; padding: 20px 0; backdrop-filter: blur(5px); }
+        .ledger-a4 { width: 794px; background: white; margin: 0 auto; padding: 30px; box-sizing: border-box; font-family: Arial, sans-serif; font-size: 12px; color: black; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .ledger-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .ledger-table th, .ledger-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+        .ledger-table th { background: #f0f0f0; font-weight: bold; }
+        .ledger-scale-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; }
+        
+        /* ================= 11. BOTTOM NAVIGATION ================= */
+        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-top: 1px solid var(--ios-border); display: flex; justify-content: space-around; padding: 10px 0 25px 0; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--ios-text-muted); font-size: 11px; font-weight: 500; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--ios-blue); }
+        .nav-icon { font-size: 22px; margin-bottom: 4px; }
+
+        /* ================= 12. PRINT STYLES (100% FIXED ISOLATION) ================= */
+        @page { size: A4 portrait; margin: 10mm; }
+        @media print {
+            body { background: white; }
+            body * { visibility: hidden; }
+            
+            #invoiceArea, #printableLedgerArea { display: none !important; }
+            
+            body.print-gst #invoiceArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
+            body.print-gst #invoiceArea *, body.print-gst #invoiceArea { visibility: visible; }
+            
+            body.print-ledger #printableLedgerArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0; padding: 0; box-shadow: none; }
+            body.print-ledger #printableLedgerArea *, body.print-ledger #printableLedgerArea { visibility: visible; }
+            
+            .preview-wrapper, .modal-overlay { background: transparent; padding: 0; overflow: visible; display: block !important; position: static; }
+            .a4-container, .ledger-a4 { width: 100% !important; height: auto !important; max-width: 100%; box-shadow: none; margin: 0; padding: 0; }
+            .border-box { height: auto; min-height: unset; border: 1px solid #000; }
+            .hide-print, .btn-close-modal, .hide-in-pdf-print, .bottom-nav, .top-header { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lock-screen" id="lockScreen">
+        <div class="lock-icon">🔒</div>
+        <h2 style="margin-bottom: 30px; color: #333;">App Locked</h2>
+        <input type="password" class="pin-input" id="pinInput" maxlength="4" placeholder="••••" pattern="\d*">
+        <button class="btn-primary" style="width: 200px;" onclick="verifyPin()">Unlock ERP</button>
+    </div>
+
+    <div class="app-container" id="mainApp">
+        <div class="top-header hide-print">
+            <div class="header-title" id="top-title">Shop Dashboard</div>
+            <button onclick="changePin()" style="background:none; border:none; font-size:20px; cursor:pointer;">⚙️</button>
+        </div>
+
+        <div id="tabs-container">
+
+            <!-- 1. HOME TAB -->
+            <div id="tab-home" class="tab-content active hide-print">
+                <div class="card" style="background: linear-gradient(135deg, var(--ios-blue), #5ac8fa); color: white; padding: 20px;">
+                    <h2 style="margin: 0 0 5px 0; font-size: 24px;">Welcome Back!</h2>
+                    <p style="margin: 0; opacity: 0.9; font-size: 15px;">Savitri Electronics ERP is Locked & Secure.</p>
+                </div>
+                <div class="dash-grid">
+                    <div class="dash-card"><div class="dash-title">Total Maal (Purchases)</div><div class="dash-value" style="color:var(--ios-blue);" id="dashPurchase">₹0</div></div>
+                    <div class="dash-card"><div class="dash-title">Market Due (Payable)</div><div class="dash-value" style="color:var(--ios-red);" id="dashMarketDue">₹0</div></div>
+                    <div class="dash-card"><div class="dash-title">Real Stock (Pcs)</div><div class="dash-value" id="dashStock">0</div></div>
+                    <div class="dash-card"><div class="dash-title">Total GST Sales</div><div class="dash-value" style="color:var(--ios-green);" id="dashMemoSalesHome">₹0</div></div>
+                    <div class="dash-card" style="grid-column: span 2;"><div class="dash-title">Total Advance Received</div><div class="dash-value" style="color:var(--ios-green);" id="dashAdvance">₹0</div></div>
+                </div>
+
+                <div class="section-header" style="margin-top:10px;"><div class="section-title">Today's Deliveries</div></div>
+                <div class="card" id="todayDeliveryList"></div>
+
+                <div class="section-header" style="margin-top:10px;"><div class="section-title">Quick Khata Check</div></div>
+                <div class="card" style="padding: 15px;">
+                    <select id="homeDealerSelect" style="width: 100%; padding: 12px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none; margin-bottom: 10px;" onchange="loadHomeDealerLedger()">
+                        <option value="" disabled selected>Select Dealer...</option>
+                    </select>
+                    
+                    <div id="homeLedgerResult" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--ios-border);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:gray;">Total Maal:</span><strong id="hTotalBill">₹0</strong></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:gray;">Total Paid:</span><strong id="hTotalPaid">₹0</strong></div>
+                        <div style="display:flex; justify-content:space-between; font-size:18px; margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
+                            <span id="hBalanceTitle" style="font-weight:600;">Balance:</span><strong id="hBalance">₹0</strong>
+                        </div>
+                        <button class="btn-primary" id="btnViewFullPdf" onclick="openHomeStatementModal()" style="margin-top:15px; background:var(--ios-blue); padding:10px;">📄 View Full PDF Statement & Edit</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. GST BILL TAB (Creation & View Module) -->
+            <div id="tab-gst" class="tab-content">
+                <div id="gstFormSection">
+                    <div class="gst-grid hide-print">
+                        <div class="gst-full section-title" style="margin-bottom:0; font-size:16px; color:var(--ios-blue);">📝 Create Tax Invoice</div>
+                        <div class="form-group gst-full"><label>Customer Name</label><input type="text" id="gst_cName" placeholder="Enter Full Name" oninput="updateGstUI()"></div>
+                        <div class="form-group"><label>Mobile Number</label><input type="tel" id="gst_cMobile" placeholder="10-digit (Optional)" oninput="updateGstUI()"></div>
+                        <div class="form-group"><label>Invoice Date</label><input type="date" id="gst_cDate" onchange="updateGstUI()"></div>
+                        <div class="form-group gst-full"><label>Full Address (Optional)</label><input type="text" id="gst_cAddress" placeholder="Customer Address" oninput="updateGstUI()"></div>
+                        <div class="form-group gst-full"><label>GSTIN / UIN (Optional)</label><input type="text" id="gst_cGST" placeholder="e.g. 09ABCDE..." oninput="updateGstUI()" style="text-transform: uppercase;"></div>
+                    </div>
+
+                    <div class="gst-box hide-print">
+                        <h4 style="margin:0 0 10px 0; color:#444;">🛒 Add Items (Incl. 18% GST)</h4>
+                        <div class="form-group" style="margin-bottom:10px;"><label>Item Name</label><input type="text" id="gst_iName" placeholder="e.g. Battery 150Ah"></div>
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div class="form-group" style="flex:1;"><label>HSN/SAC</label><input type="text" id="gst_iHSN" placeholder="8507"></div>
+                            <div class="form-group" style="flex:1;"><label>Qty</label><input type="number" id="gst_iQty" value="1" min="1"></div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;"><label>Final Rate (₹)</label><input type="number" id="gst_iRate" placeholder="₹ Final (Tax Incl.)"></div>
+                        <button class="btn-primary" onclick="addGstItem()" style="background:var(--ios-green); padding:10px;">+ Add Item to Bill</button>
+                    </div>
+
+                    <div class="gst-full hide-print" style="padding: 0 15px;">
+                        <table class="added-items-table" id="gst_summaryTable" style="display: none;">
+                            <thead><tr><th>Item</th><th>Qty</th><th>Final Rate</th><th>Action</th></tr></thead>
+                            <tbody id="gst_summaryBody"></tbody>
+                        </table>
+                        
+                        <!-- NEW: Customer Khata Payment Inputs -->
+                        <div style="display:flex; gap:10px; margin-top:15px; background:#e8f5e9; padding:15px; border-radius:8px; border:1px solid var(--ios-green);">
+                            <div class="form-group" style="flex:1; margin-bottom:0;">
+                                <label style="color:var(--ios-green); font-size:13px; font-weight:bold;">Jama Kiya (₹)</label>
+                                <input type="number" id="gst_amtPaid" placeholder="0" oninput="calculateGstDue()" style="width:100%; padding:8px; border:1px solid var(--ios-green); border-radius:6px; margin-top:5px; outline:none; font-size:16px;">
+                            </div>
+                            <div class="form-group" style="flex:1; margin-bottom:0; text-align:right;">
+                                <label style="color:var(--ios-red); font-size:13px; font-weight:bold;">Baki Due (₹)</label>
+                                <input type="text" id="gst_amtDue" readonly value="0" style="width:100%; padding:8px; text-align:right; font-weight:bold; color:var(--ios-red); background:transparent; border:none; font-size:18px; margin-top:5px;">
+                            </div>
+                        </div>
+                        <!-- END NEW -->
+
+                        <div style="display:flex; gap:10px; margin-top:15px;">
+                            <button class="btn-primary" onclick="saveAndPrintGST()" style="flex:1; margin-top:0; background:var(--ios-blue);">💾 Save & Print</button>
+                            <button class="btn-primary" onclick="saveAndWhatsAppGST()" style="flex:1; margin-top:0; background:#25D366;">🟢 Save & WhatsApp</button>
+                        </div>
+                        <p style="text-align:center; color:gray; font-size:12px; margin-top:15px;">Live A4 Bill Preview 👇</p>
+                    </div>
+                </div>
+
+                <div id="gstViewActions" class="hide-print" style="display:none; padding:15px; background:white; margin-bottom:15px; border-radius:10px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top:0; color:var(--ios-blue);">Viewing Past Invoice</h3>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-primary" onclick="exitPastBillView()" style="flex:1; background:#8e8e93; margin-top:0;">⬅ Back</button>
+                        <button class="btn-primary" onclick="printDirectPdf(window.currentViewingBillId)" style="flex:1; background:var(--ios-blue); margin-top:0;">🖨️ Print PDF</button>
+                    </div>
+                </div>
+
+                <div class="preview-wrapper" id="gst_previewWrapper">
+                    <div class="a4-container" id="invoiceArea">
+                        <div class="border-box">
+                            <h3 class="text-center bottom-border" style="margin:0; padding:8px 0; font-size: 15px; border-bottom: 1px solid #000;">TAX INVOICE</h3>
+                            <div style="display:flex; border-bottom: 1px solid #000;">
+                                <div style="flex:60%; padding:10px; border-right: 1px solid #000;">
+                                    <span class="bold" style="font-size:16px;">SAVITRI ELECTRONICS AND FURNITURE</span><br>
+                                    1, Chauhatta Ward<br>
+                                    Rudrapur, Deoria, Uttar Pradesh - 274204<br>
+                                    Mobile No: 9936844050, 9569242717<br>
+                                    <span class="bold">GSTIN/UIN:</span> 09BUGPG7609N1Z3<br>
+                                    State Name: Uttar Pradesh, Code: 09
+                                </div>
+                                <div style="flex:40%; display:flex;">
+                                    <div style="flex:50%; padding:15px 10px; border-right: 1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                                        <span class="bold">Invoice No.</span>
+                                        <span id="gst_invNo" style="margin-top:8px; font-size:13px; font-weight:bold;">SE/26-27/---</span>
+                                    </div>
+                                    <div style="flex:50%; padding:15px 10px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                                        <span class="bold">Dated</span>
+                                        <span id="gst_outDate" style="margin-top:8px; font-size:13px; font-weight:bold;"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bottom-border" style="padding:10px; border-bottom: 1px solid #000;">
+                                <span class="bold" style="text-decoration: underline;">Buyer (Bill to)</span><br>
+                                <span class="bold" id="gst_outName" style="font-size:13px; display:inline-block; margin-top:2px;">Customer Name</span>
+                                <div id="gst_boxAddress"><span id="gst_outAddress"></span></div>
+                                <div id="gst_boxMobile">MOBILE NO: <span id="gst_outMobile" class="bold"></span></div>
+                                <div id="gst_boxGST">GSTIN/UIN: <span id="gst_outGST" class="bold"></span></div>
+                                <div>State Name: Uttar Pradesh, Code: 09</div>
+                            </div>
+
+                            <div class="items-wrapper">
+                                <table class="inv-table no-top-border">
+                                    <thead>
+                                        <tr style="border-bottom:1px solid #000;">
+                                            <th style="width:4%;">Sl</th><th style="width:34%;">Description of Goods</th><th style="width:10%;">HSN/SAC</th><th style="width:7%;">Qty</th><th style="width:13%;">Rate<br><span style="font-size:9px;">(Incl. Tax)</span></th><th style="width:13%;">Rate<br><span style="font-size:9px;">(Excl. Tax)</span></th><th style="width:19%;">Amount (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="gst_outItemsList"></tbody>
+                                </table>
+                            </div>
+
+                            <table class="inv-table" style="border-top: none; border-bottom: none;">
+                                <tbody>
+                                    <tr><td colspan="6" class="text-right bold" style="border-top:none; padding:4px;">CGST @ 9%</td><td class="text-right bold" id="gst_outCGST" style="width:19%; border-top:none; padding:4px;">0.00</td></tr>
+                                    <tr><td colspan="6" class="text-right bold" style="padding:4px;">SGST @ 9%</td><td class="text-right bold" id="gst_outSGST" style="padding:4px;">0.00</td></tr>
+                                    <tr><td colspan="6" class="text-right bold" style="padding:4px;">Round Off</td><td class="text-right bold" id="gst_outRound" style="padding:4px;">0.00</td></tr>
+                                    <tr><td colspan="6" class="text-right bold" style="font-size:13px; padding:4px;">Grand Total</td><td class="text-right bold" style="font-size:13px; background:#f9f9f9; padding:4px;" id="gst_outTotal">₹ 0.00</td></tr>
+                                </tbody>
+                            </table>
+                            <div style="padding:6px 10px; border-bottom:1px solid #000; border-top: 1px solid #000;">
+                                Amount Chargeable (in words):<br><span class="bold" id="gst_outWords" style="font-size: 11px;">Indian Rupees Zero Only</span>
+                            </div>
+                            <div style="border-bottom: 1px solid #000;">
+                                <table class="inv-table" style="border: none;">
+                                    <thead>
+                                        <tr><th rowspan="2" style="border-top:none; border-left:none;">HSN/SAC</th><th rowspan="2" style="border-top:none;">Taxable Value</th><th colspan="2" style="border-top:none;">CGST</th><th colspan="2" style="border-top:none;">SGST/UTGST</th><th rowspan="2" style="border-top:none; border-right:none;">Total Tax Amount</th></tr>
+                                        <tr><th>Rate</th><th>Amount</th><th>Rate</th><th>Amount</th></tr>
+                                    </thead>
+                                    <tbody id="gst_taxSummaryList"></tbody>
+                                    <tfoot>
+                                        <tr><td class="bold text-right" style="border-left:none; padding:4px;">Total</td><td class="bold text-right" id="gst_tsTotalTaxable" style="padding:4px;">0.00</td><td></td><td class="bold text-right" id="gst_tsTotalCGST" style="padding:4px;">0.00</td><td></td><td class="bold text-right" id="gst_tsTotalSGST" style="padding:4px;">0.00</td><td class="bold text-right" style="border-right:none; padding:4px;" id="gst_tsTotalTax">0.00</td></tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div style="padding:6px 10px; border-bottom:1px solid #000; font-size:10px;">
+                                Tax Amount (in words): <span class="bold" id="gst_outTaxWords">Zero Only</span>
+                            </div>
+                            <div style="display:flex; height: 70px;">
+                                <div style="flex:65%; border-right:1px solid #000; padding:8px; font-size:9.5px;">
+                                    <span class="bold underline">Declaration:</span><br>We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+                                </div>
+                                <div style="flex:35%; padding:8px; display:flex; flex-direction:column; justify-content:space-between; text-align:center;">
+                                    <span class="bold" style="font-size:11px;">for SAVITRI ELECTRONICS AND FURNITURE</span><br><span class="bold" style="font-size:10px;">VINIT KUMAR GUPTA<br>Authorized Signatory</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 10px; font-weight: bold; margin-top: 5px; color: #444;">SUBJECT TO DEORIA JURISDICTION<br>This is a Computer Generated Invoice</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 3. INVOICE MEMO TAB -->
+            <div id="tab-memo" class="tab-content hide-print">
+                <div class="section-title" style="margin-left: 12px; margin-bottom: 10px;">GST Invoice Memos</div>
+                <div class="dash-grid">
+                    <div class="dash-card"><div class="dash-title">Today's GST Sales</div><div class="dash-value" style="color:var(--ios-green);" id="memoTodaySales">₹0</div></div>
+                    <div class="dash-card"><div class="dash-title">Total GST Sales</div><div class="dash-value" style="color:var(--ios-blue);" id="memoTotalSales">₹0</div></div>
+                </div>
+                <div style="margin: 15px 12px; display:flex; align-items:center; background:white; padding:10px; border-radius:8px; border:1px solid var(--ios-border);">
+                    <span>🔍 </span><input type="text" id="memoSearch" placeholder="Search Customer Name or Bill No..." onkeyup="filterMemos()" style="border:none; outline:none; width:100%; margin-left:10px; font-size:14px;">
+                </div>
+                <div class="card" id="memoList"><div class="loading-text" style="padding:15px; color:gray;">Loading Invoices...</div></div>
+            </div>
+
+            <!-- 4. PURCHASE TAB (Maal Inward) -->
+            <div id="tab-purchase" class="tab-content hide-print">
+                <div class="section-title">Maal Inward (Purchase Bill)</div>
+                <div class="card" style="margin-top: 8px;">
+                    <div class="input-row"><label>Dealer</label><div class="input-wrapper"><select id="dealerSelect"><option value="" disabled selected>Select Dealer...</option></select><button class="btn-add-cat" onclick="addNewDealer()">+</button></div></div>
+                    <div class="input-row"><label>Date</label><div class="input-wrapper"><input type="date" id="billDate"></div></div>
+                    <div class="input-row"><label>Bill No.</label><div class="input-wrapper"><input type="text" id="billNumber" placeholder="Enter Bill Number"></div></div>
+                    <div class="input-row"><label>Amount (₹)</label><div class="input-wrapper"><input type="number" id="billAmount" placeholder="Total Bill Value"></div></div>
+                    <div class="input-row" style="flex-direction: column; align-items: flex-start; padding-bottom: 16px;">
+                        <label style="width: 100%; margin-bottom: 12px;">Bill Photo 📸</label>
+                        <input type="file" id="billPhoto" accept="image/*" capture="environment" style="font-size: 14px; width: 100%;">
+                        <img id="billPreview" style="max-width: 100%; margin-top: 10px; border-radius: 8px; display: none; border: 1px solid var(--ios-border);">
+                    </div>
+                </div>
+                <button class="btn-primary" id="savePurchaseBtn">Save Bill Details</button>
+                <br><br>
+                <div class="section-header"><div class="section-title">Recent Inward Bills</div></div>
+                <div class="card" style="margin-top: 8px; padding: 12px; background: white;"><select id="purchaseFilterSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="filterPurchaseByDealer()"><option value="" selected>Show All Dealers...</option></select></div>
+                <div class="card" id="purchaseList"><div class="loading-text">Loading bills...</div></div>
+            </div>
+
+            <!-- 5. ACCOUNTS TAB (Dealer Khata) -->
+            <div id="tab-accounts" class="tab-content hide-print">
+                <div class="section-title" style="margin-left: 12px;">Dealer Ledger (Khata)</div>
+                <div class="card" style="margin-top: 8px; padding: 12px; background: white;"><select id="ledgerDealerSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none;" onchange="loadDealerPassbook()"><option value="" disabled selected>Select Dealer to view Khata...</option></select></div>
+                <div class="card" id="ledgerDashboard" style="display: none; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="dash-card" style="background: #e8f5e9; flex:1; padding:10px; margin-right:10px;"><div class="dash-title">Total Maal</div><div class="dash-value" style="color: var(--ios-green);" id="ledgerTotalBill">₹0</div></div><div class="dash-card" style="background: #e3f2fd; flex:1; padding:10px;"><div class="dash-title">Total Jama</div><div class="dash-value" style="color: var(--ios-blue);" id="ledgerTotalPaid">₹0</div></div></div>
+                    <div class="dash-card" id="ledgerBalanceBox" style="background: #ffebee; padding:15px; text-align:center;"><div class="dash-title" id="ledgerBalanceTitle" style="font-size: 14px;">Net Balance</div><div class="dash-value" id="ledgerBalanceValue" style="font-size: 26px; color: var(--ios-red);">₹0</div></div>
+                </div>
+                <div class="section-title" style="margin-top: 20px; margin-left: 12px;">New Payment Entry</div>
+                <div class="card" style="margin-top: 8px;">
+                    <div class="input-row"><label>Date</label><div class="input-wrapper"><input type="date" id="payDate"></div></div>
+                    <div class="input-row"><label>Amount</label><div class="input-wrapper"><input type="number" id="payAmount" placeholder="₹ Amount"></div></div>
+                    <div class="input-row"><label>Mode</label><div class="input-wrapper"><select id="payMode" style="width:100%; font-size: 15px; background: transparent; border:none; outline:none;"><option value="Cash">Cash</option><option value="NEFT">NEFT</option><option value="UPI">UPI</option></select></div></div>
+                    <div class="input-row"><label>Remarks</label><div class="input-wrapper"><input type="text" id="payRemarks" placeholder="Details..."></div></div>
+                </div>
+                <button class="btn-primary" id="savePaymentBtn" style="background-color: var(--ios-purple);">Save Payment</button>
+                <br><br>
+                <div class="section-header"><div class="section-title" id="passbookTitle">Ledger Statement</div></div>
+                <div style="margin: 10px 12px; display:flex; align-items:center; background:white; padding:10px; border-radius:8px; border:1px solid var(--ios-border);"><span>🔍 </span><input type="text" id="paySearch" placeholder="Search Amount, Bill No..." onkeyup="filterPassbook()" style="border:none; outline:none; width:100%; margin-left:10px; font-size:14px;"></div>
+                <div class="card" id="passbookCardParent"><div id="passbookList"><div class="record-item" style="color:gray; padding:15px;">Select dealer...</div></div></div>
+            </div>
+
+            <!-- 6. REAL STOCK TAB -->
+            <div id="tab-realstock" class="tab-content hide-print">
+                <div class="section-title" style="margin-left: 12px;">Real Inventory Entry</div>
+                <div class="card" style="margin-top: 8px;">
+                    <datalist id="modelSuggestList"></datalist><input type="hidden" id="realStockEditId" value="">
+                    <div class="input-row"><label>Model Name</label><div class="input-wrapper"><input type="text" id="rsModelName" list="modelSuggestList" placeholder="Search or Type new..." oninput="autoFillStockDetails()" autocomplete="off"></div></div>
+                    <div class="input-row"><label>Brand</label><div class="input-wrapper"><input type="text" id="rsBrand" placeholder="e.g. LG, Samsung"></div></div>
+                    <div class="input-row"><label>Rate (₹)</label><div class="input-wrapper"><input type="number" id="rsRate" placeholder="Selling/Cost Price"></div></div>
+                    <div class="input-row"><label>Quantity</label><div class="input-wrapper"><input type="number" id="rsQty" placeholder="Pieces (Pcs)" value="1"></div></div>
+                </div>
+                <button class="btn-primary" id="saveRealStockBtn" style="background-color: var(--ios-blue);">Save / Update Stock</button>
+                <br><br>
+                <div class="section-header"><div class="section-title">Current Shop Inventory</div></div>
+                <div style="margin: 10px 12px; display:flex; align-items:center; background:white; padding:10px; border-radius:8px; border:1px solid var(--ios-border);"><span>🔍 </span><input type="search" id="rsSearchInput" placeholder="Search Model or Brand..." onkeyup="filterRealStock()" style="border:none; outline:none; width:100%; margin-left:10px; font-size:14px;"></div>
+                <div class="card" id="realStockList"><div class="loading-text">Loading Inventory...</div></div>
+            </div>
+
+            <!-- 7. SALES & BOOKING TAB -->
+            <div id="tab-sales" class="tab-content hide-print">
+                <div class="section-title" style="margin-left: 12px;">Customer Booking</div>
+                <div class="card" style="margin-top: 8px;">
+                    <div class="input-row"><label>Customer</label><div class="input-wrapper"><input type="text" id="custName" placeholder="Name"></div></div>
+                    <div class="input-row" style="border-bottom: none;"><label>Mobile</label><div class="input-wrapper"><input type="tel" id="custMobile" placeholder="10-digit" maxlength="10"></div></div>
+                    <div style="background: #fcfcfc; padding: 12px 14px; border-top: 1px solid var(--ios-border); border-bottom: 1px solid var(--ios-border);">
+                        <label style="font-size: 14px; font-weight: 500; margin-bottom:10px; display:block; color:var(--ios-blue);">Item Details</label>
+                        <div id="itemsWrapper"><div class="sales-item-row"><input type="text" class="sales-item-name req-item-name" placeholder="Item Name"><input type="number" class="sales-item-qty req-item-qty" placeholder="Qty" value="1" oninput="calculateCustBalance()"><input type="number" class="sales-item-price req-item-price" placeholder="Price (₹)" oninput="calculateCustBalance()"><button class="btn-remove-item" style="display:none;"></button></div></div>
+                        <button class="btn-add-item" onclick="addSalesItemRow()">+ Add More Item</button>
+                    </div>
+                    <div class="input-row"><label>Total Bill</label><div class="input-wrapper"><input type="number" id="custTotalBill" placeholder="₹ Auto Calculated" readonly style="font-weight:bold; color:var(--ios-text-main);"></div></div>
+                    <div class="input-row"><label>Advance</label><div class="input-wrapper"><input type="number" id="custAdvance" placeholder="₹" oninput="calculateCustBalance()"></div></div>
+                    <div class="input-row"><label>Due</label><div class="input-wrapper"><strong id="custBalanceText" style="color:var(--ios-red); font-size:16px;">₹0</strong></div></div>
+                    <div class="input-row"><label>Delivery</label><div class="input-wrapper"><input type="date" id="custDeliveryDate"></div></div>
+                </div>
+                <button class="btn-primary" id="saveBookingBtn" style="background-color: var(--ios-orange);">Save Booking</button>
+                <br><br>
+                <div class="section-header"><div class="section-title">Pending Bookings</div></div>
+                <div class="card" id="bookingList"></div>
+            </div>
+
+            <!-- 8. CUSTOMER KHATA TAB (UPDATED WITH SEARCH BOX) -->
+            <div id="tab-cust-khata" class="tab-content hide-print">
+                <div class="section-title" style="margin-left: 12px;">Customer Udhar Khata</div>
+                <div class="card" style="margin-top: 8px; padding: 12px; background: white;">
+                    <!-- Naya Searchable Input yahan add kiya hai -->
+                    <input type="text" id="khataCustomerSelect" list="khataCustomerDatalist" placeholder="🔍 Search Customer Name..." style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--ios-border); border-radius: 8px; outline: none; box-sizing:border-box;" onchange="loadCustomerKhata()">
+                    <datalist id="khataCustomerDatalist"></datalist>
+                </div>
+                
+                <div class="card" id="khataDashboard" style="display: none; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="dash-card" style="background: #fff3e0; flex:1; padding:10px; margin-right:10px;">
+                            <div class="dash-title">Total Bill</div>
+                            <div class="dash-value" style="color: var(--ios-orange);" id="khataTotalBill">₹0</div>
+                        </div>
+                        <div class="dash-card" style="background: #e8f5e9; flex:1; padding:10px;">
+                            <div class="dash-title">Total Jama</div>
+                            <div class="dash-value" style="color: var(--ios-green);" id="khataTotalJama">₹0</div>
+                        </div>
+                    </div>
+                    <div class="dash-card" id="khataBalanceBox" style="background: #ffebee; padding:15px; text-align:center;">
+                        <div class="dash-title" id="khataBalanceTitle" style="font-size: 14px;">Baki (Due)</div>
+                        <div class="dash-value" id="khataBalanceValue" style="font-size: 26px; color: var(--ios-red);">₹0</div>
+                        <button class="btn-primary" onclick="sendCustomerReminder()" style="background:#25D366; padding:8px; font-size:14px; margin-top:10px; width:100%;">🟢 WhatsApp Reminder</button>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 20px; margin-left: 12px;">Naya Jama (Add Payment)</div>
+                <div class="card" style="margin-top: 8px;">
+                    <div class="input-row"><label>Date</label><div class="input-wrapper"><input type="date" id="khataPayDate"></div></div>
+                    <div class="input-row"><label>Amount</label><div class="input-wrapper"><input type="number" id="khataPayAmount" placeholder="₹ Amount"></div></div>
+                    <div class="input-row"><label>Mode</label><div class="input-wrapper"><select id="khataPayMode" style="width:100%; font-size: 15px; background: transparent; border:none; outline:none;"><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Bank">Bank</option></select></div></div>
+                    <div class="input-row"><label>Remarks</label><div class="input-wrapper"><input type="text" id="khataPayRemarks" placeholder="Details..."></div></div>
+                </div>
+                <button class="btn-primary" id="saveKhataPaymentBtn" style="background-color: var(--ios-purple);">Save Jama Record</button>
+                
+                <br><br>
+                <div class="section-header"><div class="section-title" id="khataPassbookTitle">Customer Statement</div></div>
+                <div class="card" id="khataPassbookCardParent">
+                    <div id="khataPassbookList"><div class="record-item" style="color:gray; padding:15px;">Select customer...</div></div>
+                </div>
+            </div>
+
+        </div> <!-- END OF TABS CONTAINER -->
+
+        <!-- ================= GLOBAL MODALS ================= -->
+        
+        <!-- PDF LEDGER MODAL -->
+        <div id="pdfLedgerModal" class="modal-overlay">
+            <div style="text-align:center; margin-bottom: 15px;" class="hide-print">
+                <button class="btn-primary" onclick="closeHomeStatementModal()" style="width: auto; background: #8e8e93; padding: 10px 20px; margin:0 5px;">⬅ Close</button>
+                <button class="btn-primary" onclick="printLedgerPdf()" style="width: auto; background: var(--ios-green); padding: 10px 20px; margin:0 5px;">🖨️ Download PDF</button>
+            </div>
+            <div class="ledger-scale-wrapper">
+                <div class="ledger-a4" id="printableLedgerArea">
+                    <h2 style="text-align:center; margin:0 0 5px 0;">SAVITRI ELECTRONICS AND FURNITURE</h2>
+                    <h3 style="text-align:center; margin:0 0 15px 0; border-bottom: 1px solid #000; padding-bottom: 10px;">DEALER LEDGER STATEMENT</h3>
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 15px;">
+                        <div><strong>Dealer Name:</strong> <span id="pdfDealerName"></span></div>
+                        <div><strong>Generated On:</strong> <span id="pdfGenDate"></span></div>
+                    </div>
+                    <table class="ledger-table">
+                        <thead>
+                            <tr>
+                                <th style="width:15%;">Date</th>
+                                <th style="width:30%;">Particulars</th>
+                                <th style="width:15%;">Maal In (Dr)</th>
+                                <th style="width:15%;">Paid (Cr)</th>
+                                <th style="width:15%;">Balance</th>
+                                <th class="hide-in-pdf-print" style="width:10%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pdfLedgerBody"></tbody>
+                    </table>
+                    <div style="margin-top:20px; border-top:1px solid #000; padding-top:10px; display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
+                        <span>Closing Balance:</span>
+                        <span id="pdfClosingBalance">₹0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEALER TRANSACTION EDIT MODAL -->
+        <div id="editTxnModal" class="modal-overlay" style="z-index: 3000; padding-top:50px;">
+            <div class="card hide-print" style="width: 90%; max-width: 400px; margin: 0 auto; padding: 20px;">
+                <h3 style="margin-top:0; color:var(--ios-blue);">Edit Transaction</h3>
+                <input type="hidden" id="editTxnId">
+                <input type="hidden" id="editTxnType">
+                
+                <div class="input-row"><label>Date</label><div class="input-wrapper"><input type="date" id="editTxnDate"></div></div>
+                <div class="input-row"><label>Amount</label><div class="input-wrapper"><input type="number" id="editTxnAmount"></div></div>
+                
+                <div id="editBillFields" style="display:none;">
+                    <div class="input-row" style="border-bottom:none;"><label>Bill No.</label><div class="input-wrapper"><input type="text" id="editTxnBillNo"></div></div>
+                </div>
+                
+                <div id="editPayFields" style="display:none;">
+                    <div class="input-row"><label>Mode</label><div class="input-wrapper"><select id="editTxnMode"><option value="Cash">Cash</option><option value="NEFT">NEFT</option><option value="UPI">UPI</option></select></div></div>
+                    <div class="input-row" style="border-bottom:none;"><label>Remarks</label><div class="input-wrapper"><input type="text" id="editTxnRemarks"></div></div>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-primary" onclick="saveTxnEdit()" style="flex:1; background:var(--ios-green); margin-top:0;">💾 Update</button>
+                    <button class="btn-primary" onclick="closeEditTxnModal()" style="flex:1; background:var(--ios-red); margin-top:0;">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🖼️ IMAGE VIEWER MODAL -->
+        <div id="imageModal" class="modal-overlay" style="z-index: 4000; align-items:center; justify-content:center; flex-direction:column;">
+            <div style="width: 90%; max-width: 500px; text-align:right; margin-bottom:10px; margin-top: 50px;">
+                <button class="btn-destructive" onclick="closeImageModal()" style="background:white; color:var(--ios-red); padding:8px 15px; font-size:16px; font-weight:bold; border-radius:8px;">✖ Close</button>
+            </div>
+            <img id="modalImageSrc" style="max-width: 95%; max-height: 75vh; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); object-fit: contain;">
+        </div>
+
+        <!-- CUSTOMER KHATA EDIT MODAL -->
+        <div id="editCustTxnModal" class="modal-overlay" style="z-index: 3000; padding-top:50px;">
+            <div class="card hide-print" style="width: 90%; max-width: 400px; margin: 0 auto; padding: 20px;">
+                <h3 style="margin-top:0; color:var(--ios-blue);">Edit Khata Entry</h3>
+                <input type="hidden" id="editCustTxnId">
+                <input type="hidden" id="editCustTxnType">
+                
+                <div class="input-row"><label>Date</label><div class="input-wrapper"><input type="date" id="editCustTxnDate"></div></div>
+                <div class="input-row"><label>Amount</label><div class="input-wrapper"><input type="number" id="editCustTxnAmount"></div></div>
+                
+                <div id="editCustBillFields" style="display:none;">
+                    <div class="input-row" style="border-bottom:none;"><label>Bill No.</label><div class="input-wrapper"><input type="text" id="editCustTxnBillNo"></div></div>
+                </div>
+                
+                <div id="editCustPayFields" style="display:none;">
+                    <div class="input-row"><label>Mode</label><div class="input-wrapper"><select id="editCustTxnMode"><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Bank">Bank</option><option value="Bill Jama">Bill Jama</option></select></div></div>
+                    <div class="input-row" style="border-bottom:none;"><label>Remarks</label><div class="input-wrapper"><input type="text" id="editCustTxnRemarks"></div></div>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-primary" onclick="saveCustTxnEdit()" style="flex:1; background:var(--ios-green); margin-top:0;">💾 Update</button>
+                    <button class="btn-primary" onclick="closeCustEditTxnModal()" style="flex:1; background:var(--ios-red); margin-top:0;">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KHATA BILL DETAILS MODAL -->
+        <div id="viewKhataBillModal" class="modal-overlay" style="z-index: 4000; padding-top:50px;">
+            <div class="card hide-print" style="width: 90%; max-width: 400px; margin: 0 auto; padding: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0; color:var(--ios-blue);">🧾 Bill Details</h3>
+                    <button onclick="closeKhataBillModal()" style="background:none; border:none; font-size:18px; color:var(--ios-red); cursor:pointer;">✖</button>
+                </div>
+                
+                <div style="background:#f9f9fc; padding:10px; border-radius:8px; border:1px solid var(--ios-border); margin-bottom:15px; font-size:14px;">
+                    <div style="margin-bottom:5px;"><strong>Name:</strong> <span id="vk_name"></span></div>
+                    <div style="margin-bottom:5px;"><strong>Mobile:</strong> <span id="vk_mobile"></span></div>
+                    <div style="margin-bottom:5px;"><strong>Address:</strong> <span id="vk_address"></span></div>
+                    <div style="margin-bottom:5px;"><strong>Bill No:</strong> <span id="vk_billNo"></span></div>
+                    <div><strong>Date:</strong> <span id="vk_date"></span></div>
+                </div>
+
+                <h4 style="margin:0 0 10px 0; font-size:14px; color:#444;">Items Purchased:</h4>
+                <div id="vk_itemsList" style="max-height: 150px; overflow-y: auto; margin-bottom:15px; font-size:13px; border-bottom:1px solid #ddd; padding-bottom:10px;">
+                    <!-- Items list will appear here -->
+                </div>
+
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px; font-size:14px;">
+                    <span>Total Bill:</span><span id="vk_total" style="color:var(--ios-blue);">₹0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px; font-size:14px;">
+                    <span>Paid (Jama):</span><span id="vk_paid" style="color:var(--ios-green);">₹0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:16px; margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
+                    <span>Baki (Due):</span><span id="vk_due" style="color:var(--ios-red);">₹0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation Bar -->
+        <div class="bottom-nav hide-print" style="overflow-x: auto; justify-content: flex-start; gap: 8px; padding: 10px 10px 25px 10px;">
+            <div class="nav-item active" style="min-width: 60px;" onclick="switchTab('tab-home', 'Shop Dashboard')"><span class="nav-icon">🏠</span><span>Home</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-gst', 'Create GST Bill')"><span class="nav-icon">🧾</span><span>GST</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-memo', 'Invoice Memos')"><span class="nav-icon">📁</span><span>Memo</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-purchase', 'Maal Inward')"><span class="nav-icon">🚛</span><span>Buy</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-accounts', 'Dealer Khata')"><span class="nav-icon">📒</span><span>Khata</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-realstock', 'Real Stock')"><span class="nav-icon">📦</span><span>Stock</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-sales', 'Bookings')"><span class="nav-icon">📝</span><span>Sales</span></div>
+            <div class="nav-item" style="min-width: 60px;" onclick="switchTab('tab-cust-khata', 'Customer Khata')"><span class="nav-icon">🧑‍🤝‍🧑</span><span>Udhar</span></div>
+        </div>
+    </div>
+    
     <!-- MAIN APP JAVASCRIPT & FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -15,18 +617,12 @@
         const app = initializeApp(firebaseConfig); 
         const db = getFirestore(app);
 
-        // Global Variable for Real Stock to be accessible everywhere
-        let globalRealStock = [];
-
         // ================= UI SWITCHING & SECURITY =================
         window.switchTab = function(tabId, titleText) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            
-            let activeNavItem = Array.from(document.querySelectorAll('.nav-item')).find(item => item.getAttribute('onclick') && item.getAttribute('onclick').includes(tabId));
-            if(activeNavItem) activeNavItem.classList.add('active');
-            
+            event.currentTarget.classList.add('active');
             document.getElementById('top-title').innerText = titleText;
             window.scrollTo(0, 0);
             if(tabId === 'tab-gst' && window.scaleInvoice) window.scaleInvoice();
@@ -145,15 +741,6 @@
             document.getElementById('gst_outDate').innerText = d ? new Date(d).toLocaleDateString('en-IN') : '';
         };
 
-        // NEW SMART UPGRADE: Auto Fill Price from Stock
-        window.autoFillGstPrice = function() {
-            let val = document.getElementById('gst_iName').value.trim();
-            let stockItem = globalRealStock.find(stock => stock.modelName.toUpperCase() === val.toUpperCase());
-            if(stockItem) {
-                document.getElementById('gst_iRate').value = stockItem.rate;
-            }
-        };
-
         window.addGstItem = function() {
             const name = document.getElementById('gst_iName').value.trim(); 
             const hsn = document.getElementById('gst_iHSN').value.trim() || ''; 
@@ -180,6 +767,7 @@
             window.renderGstCalculations(); 
         };
 
+        // Calculate Baki (Due) when Jama amount is entered
         window.calculateGstDue = function() {
             let jama = Number(document.getElementById('gst_amtPaid').value) || 0;
             let baki = window.currentGrandTotal - jama;
@@ -271,6 +859,7 @@
         let globalGstInvoices = []; 
         let currentBillNumber = "SE/26-27/001";
         
+        // Setup Customer List reference
         let customerList = []; 
         const custRef = doc(db, "app_settings", "customers");
         onSnapshot(custRef, (docSnap) => { 
@@ -333,18 +922,23 @@
             }); 
         };
         
+        // NEW AUTO DELETE LOGIC
         window.deleteGstBill = async function(id) { 
             if(!confirm("⚠️ Kya aap sach mein is GST Bill ko delete karna chahte hain? \n\nIska Udhar aur Jama record bhi Khata se permanently delete ho jayega!")) return;
             
             let bill = globalGstInvoices.find(x => x.id === id);
             if(bill) {
                 let bNo = bill.billNo;
+                
+                // 1. Delete main GST invoice
                 await deleteDoc(doc(db, "gst_invoices", id));
                 
+                // 2. Delete from Udhar (cust_khata_bills)
                 const qBills = query(collection(db, "cust_khata_bills"), where("billNo", "==", bNo));
                 const snapBills = await getDocs(qBills);
                 snapBills.forEach(async (d) => { await deleteDoc(doc(db, "cust_khata_bills", d.id)); });
 
+                // 3. Delete from Jama (cust_khata_payments)
                 const qPays = query(collection(db, "cust_khata_payments"), where("customer", "==", bill.cName));
                 const snapPays = await getDocs(qPays);
                 snapPays.forEach(async (d) => { 
@@ -360,7 +954,7 @@
             if(window.gstItems.length === 0) return false;
             const rawName = document.getElementById('gst_cName').value.trim(); 
             if(!rawName) return false;
-            const name = rawName.toUpperCase();
+            const name = rawName.toUpperCase(); // Standardize name
             
             let totalBase = 0; 
             window.gstItems.forEach(i => totalBase += i.baseAmount);
@@ -386,40 +980,30 @@
             };
             
             try { 
+                // 1. Save GST Bill
                 await addDoc(collection(db, "gst_invoices"), billData); 
-
-                // --- NEW SMART UPGRADE: AUTO INVENTORY DEDUCTION ---
-                for (let i = 0; i < window.gstItems.length; i++) {
-                    let billedItem = window.gstItems[i];
-                    let stockItem = globalRealStock.find(stock => stock.modelName.toUpperCase() === billedItem.name.toUpperCase());
-                    
-                    if(stockItem) {
-                        let updatedQty = (stockItem.qty || 0) - billedItem.qty;
-                        if(updatedQty < 0) updatedQty = 0;
-                        await updateDoc(doc(db, "real_inventory", stockItem.id), { 
-                            qty: updatedQty, 
-                            updatedAt: Date.now() 
-                        });
-                    }
-                }
                 
+                // 2. Manage Customer List
                 if(!customerList.includes(name)) {
                     customerList.push(name);
                     await setDoc(custRef, { list: customerList });
                 }
                 
+                // 3. Auto-add to Customer Khata Bills (Udhar)
                 if(grandTotal > 0) {
                     await addDoc(collection(db, "cust_khata_bills"), {
                         customer: name, date: billDate, amount: grandTotal, billNo: currentBillNumber, timestamp: ts
                     });
                 }
                 
+                // 4. Auto-add to Customer Khata Payments (Jama)
                 if(amtPaid > 0) {
                     await addDoc(collection(db, "cust_khata_payments"), {
                         customer: name, date: billDate, amount: amtPaid, mode: "Bill Jama", remarks: "For Bill: " + currentBillNumber, timestamp: ts + 1
                     });
                 }
 
+                // Reset Form
                 window.gstItems = []; 
                 document.getElementById('gst_cName').value = ''; 
                 document.getElementById('gst_cMobile').value = ''; 
@@ -578,7 +1162,6 @@
 
         if(window.updateGstUI) window.updateGstUI();
         if(window.renderGstCalculations) window.renderGstCalculations();
-
         // ================= ERP LOGIC (REST TABS) =================
         let dealersList = ["SAMSUNG DISTRIBUTOR", "LG AGENCY"]; 
         const dealerRef = doc(db, "app_settings", "dealers");
@@ -603,6 +1186,7 @@
             }); 
         }
 
+        // NEW: Update Customer Datalist for Search Box
         window.updateKhataSelects = function() {
             const dataList = document.getElementById('khataCustomerDatalist');
             if(dataList && typeof customerList !== 'undefined') {
@@ -754,7 +1338,7 @@
             await deleteDoc(doc(db, colName, id)); 
         };
 
-        // ================= CUSTOMER KHATA LOGIC =================
+        // ================= CUSTOMER KHATA LOGIC (NEW) =================
         if(document.getElementById('khataPayDate')) document.getElementById('khataPayDate').valueAsDate = new Date();
         let ckUnsubBills = null; let ckUnsubPays = null; let ckCustomer = "";
         let ckTotalDueAmount = 0;
@@ -790,6 +1374,7 @@
                     let safeRemarks = (item.remarks || '').replace(/'/g, "\\'"); 
                     let safeBillNo = (item.billNo || '').replace(/'/g, "\\'");
                     
+                    // EDIT, DELETE AND DETAILS BUTTONS
                     let actionButtons = `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">`;
                     
                     if(item.type === 'bill') {
@@ -841,6 +1426,7 @@
             alert("✅ Customer Jama Updated!");
         });
 
+        // EDIT & DELETE FUNCTIONS FOR KHATA
         window.deleteCustTxn = async function(id, type) {
             if(!confirm("⚠️ Kya aap sach mein is entry ko delete karna chahte hain?")) return;
             let colName = type === 'bill' ? 'cust_khata_bills' : 'cust_khata_payments';
@@ -899,14 +1485,19 @@
             }
         };
 
+        // NEW WhatsApp Logic with Auto-fill Number
         window.sendCustomerReminder = function() {
             if(ckTotalDueAmount <= 0) {
                 alert("Iss customer ka koi Baki (Due) nahi hai.");
                 return;
             }
+            
+            // Database se is customer ka number dhundhna
             let custMobile = "";
             let pastBill = globalGstInvoices.find(b => b.cName.toUpperCase() === ckCustomer.toUpperCase() && b.cMobile);
-            if(pastBill) custMobile = pastBill.cMobile;
+            if(pastBill) {
+                custMobile = pastBill.cMobile;
+            }
 
             let mobile = prompt("Customer ka WhatsApp number:", custMobile);
             if(mobile && mobile.length >= 10) {
@@ -1064,25 +1655,20 @@
         }
 
         // ================= REAL STOCK TAB =================
+        let globalRealStock = [];
+        
         onSnapshot(query(collection(db, "real_inventory"), orderBy("modelName", "asc")), (snap) => { 
             const list = document.getElementById('realStockList'); 
-            const dataList = document.getElementById('modelSuggestList');
-            const gstStockList = document.getElementById('gstStockList'); 
-            
+            const dataList = document.getElementById('modelSuggestList'); 
             if(list) list.innerHTML = ''; 
             if(dataList) dataList.innerHTML = ''; 
-            if(gstStockList) gstStockList.innerHTML = '';
-            
             globalRealStock = []; 
             let html = ''; let totalStockCount = 0; 
             
             snap.forEach((docSnap) => { 
                 const data = docSnap.data(); data.id = docSnap.id; globalRealStock.push(data); 
                 totalStockCount += (data.qty || 0); 
-                
                 if(dataList) dataList.innerHTML += `<option value="${data.modelName}">`; 
-                if(gstStockList && data.qty > 0) gstStockList.innerHTML += `<option value="${data.modelName}">`; 
-                
                 if(list) { 
                     let stockBadge = data.qty > 0 ? `<span style="background:#e8f5e9; color:var(--ios-green); padding:2px 6px; border-radius:4px; font-weight:bold;">${data.qty} Pcs</span>` : `<span style="background:#ffebee; color:var(--ios-red); padding:2px 6px; border-radius:4px; font-weight:bold;">Out of Stock</span>`; 
                     html += `<div class="record-item rs-card" data-search="${data.modelName.toLowerCase()} ${data.brand.toLowerCase()}"><div style="display:flex; justify-content:space-between; align-items:center;"><div class="product-title">${data.modelName}</div>${stockBadge}</div><div class="data-row"><span>Brand: <strong>${data.brand}</strong></span><span style="color:var(--ios-blue); font-weight:bold;">Rate: ₹${Number(data.rate).toLocaleString('en-IN')}</span></div><div class="action-buttons" style="margin-top:12px;"><button class="btn-edit" onclick="editRealStock('${data.id}', '${data.modelName}', '${data.brand}', ${data.rate}, ${data.qty})" style="flex:2;">✏️ Edit</button><button class="btn-edit" style="background:#e8f5e9; color:var(--ios-green);" onclick="adjustQty('${data.id}', ${data.qty}, 1)">+ 1 Pcs</button><button class="btn-destructive" style="background:#ffebee; color:var(--ios-red);" onclick="adjustQty('${data.id}', ${data.qty}, -1)">- 1 Pcs</button></div></div>`; 
@@ -1163,7 +1749,7 @@
             }); 
         };
 
-        // ================= SALES & BOOKING TAB (SMART UPGRADE 3) =================
+        // ================= SALES & BOOKING TAB =================
         if(document.getElementById('custDeliveryDate')) document.getElementById('custDeliveryDate').valueAsDate = new Date();
         
         window.addSalesItemRow = function() { 
@@ -1226,23 +1812,6 @@
             btn.innerText = "Save Booking"; 
         });
         
-        // NEW SMART UPGRADE: Print Token Function
-        window.printToken = function(name, mobile, date, items, total, adv) {
-            document.getElementById('tokName').innerText = name;
-            document.getElementById('tokMobile').innerText = mobile;
-            document.getElementById('tokDate').innerText = new Date(date).toLocaleDateString('en-IN');
-            document.getElementById('tokItems').innerText = items;
-            document.getElementById('tokTotal').innerText = total;
-            document.getElementById('tokAdv').innerText = adv;
-            document.getElementById('tokDue').innerText = total - adv;
-            
-            document.body.className = 'print-token';
-            setTimeout(() => { 
-                window.print(); 
-                document.body.className = ''; 
-            }, 100);
-        };
-
         onSnapshot(query(collection(db, "sales_bookings")), (snap) => { 
             const list = document.getElementById('bookingList'); 
             const todayList = document.getElementById('todayDeliveryList'); 
@@ -1259,14 +1828,7 @@
             tempA.forEach((d) => { 
                 tAdv += (d.advanceAmount || 0); 
                 let bal = (d.totalBill||0) - (d.advanceAmount||0); 
-                let safeName = (d.customerName || '').replace(/'/g, "\\'");
-                let safeMobile = (d.mobile || '').replace(/'/g, "\\'");
-                let safeItems = (d.items || '').replace(/`/g, "\\`");
-                
-                let tokenBtn = `<button onclick="printToken('${safeName}', '${safeMobile}', '${d.deliveryDate}', \`${safeItems}\`, ${d.totalBill||0}, ${d.advanceAmount||0})" style="background:var(--ios-blue);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer; margin-right:5px;">🖨️ Token</button>`;
-                
-                let html = `<div class="record-item"><div style="display:flex; justify-content:space-between;"><div class="product-title">👤 ${d.customerName}</div><div style="font-weight:700; color:var(--ios-orange);">Adv: ₹${d.advanceAmount.toLocaleString('en-IN')}</div></div><div style="font-size:13px; color:#444; margin:6px 0; white-space:pre-wrap; line-height:1.4;">${d.items}</div><div class="data-row"><span>Total Bill: ₹${(d.totalBill||0).toLocaleString('en-IN')}</span><span style="color:var(--ios-red); font-weight:bold;">Due: ₹${bal.toLocaleString('en-IN')}</span></div><div style="margin-top:10px; display:flex; justify-content:flex-end; align-items:center;"><span style="font-size:12px; color:var(--ios-purple); font-weight:600; margin-right:auto;">🚚 Del: ${new Date(d.deliveryDate).toLocaleDateString('en-IN')}</span>${tokenBtn}<button onclick="deleteBooking('${d.id}')" style="background:var(--ios-green);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">✅ Complete</button></div></div>`; 
-                
+                let html = `<div class="record-item"><div style="display:flex; justify-content:space-between;"><div class="product-title">👤 ${d.customerName}</div><div style="font-weight:700; color:var(--ios-orange);">Adv: ₹${d.advanceAmount.toLocaleString('en-IN')}</div></div><div style="font-size:13px; color:#444; margin:6px 0; white-space:pre-wrap; line-height:1.4;">${d.items}</div><div class="data-row"><span>Total Bill: ₹${(d.totalBill||0).toLocaleString('en-IN')}</span><span style="color:var(--ios-red); font-weight:bold;">Due: ₹${bal.toLocaleString('en-IN')}</span></div><div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ios-purple); font-weight:600;">🚚 Del: ${new Date(d.deliveryDate).toLocaleDateString('en-IN')}</span><button onclick="deleteBooking('${d.id}')" style="background:var(--ios-green);border:none;color:white;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">✅ Complete</button></div></div>`; 
                 if(list) list.innerHTML += html; 
                 if(d.deliveryDate === todayStr && todayList) { todayList.innerHTML += html; todayCount++; } 
             }); 
